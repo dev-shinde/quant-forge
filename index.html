@@ -1,0 +1,1505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Quant Forge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css">
+<style>
+:root{
+  --ink:#0b0e14; --panel:#121826; --panel2:#0e131e; --line:#1f2836; --line2:#2a3547;
+  --text:#e6e9ef; --muted:#8b94a7; --faint:#5d6678;
+  --cyan:#34e0d2; --violet:#a78bfa; --amber:#fbbf24;
+  --good:#34d399; --bad:#f87171; --warn:#fbbf24;
+  --mono:'JetBrains Mono',ui-monospace,monospace; --ui:'Space Grotesk',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--ink);color:var(--text);font-family:var(--ui);font-size:15px;line-height:1.55;
+  -webkit-font-smoothing:antialiased;display:flex;flex-direction:column;min-height:100vh}
+a{color:var(--cyan);text-decoration:none}
+button{font-family:var(--ui);cursor:pointer}
+.mono{font-family:var(--mono)}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint)}
+
+/* header */
+header{display:flex;align-items:center;gap:18px;padding:14px 22px;border-bottom:1px solid var(--line);
+  position:sticky;top:0;background:rgba(11,14,20,.86);backdrop-filter:blur(8px);z-index:20;flex-wrap:wrap}
+.brand{display:flex;align-items:baseline;gap:10px}
+.brand b{font-weight:700;font-size:18px;letter-spacing:-.01em}
+.brand .spark{font-family:var(--mono);font-size:11px;color:var(--amber)}
+nav{display:flex;gap:4px;flex-wrap:wrap}
+nav button{background:transparent;border:1px solid transparent;color:var(--muted);padding:6px 12px;border-radius:8px;
+  font-size:13px;font-weight:500;letter-spacing:.01em}
+nav button:hover{color:var(--text);background:var(--panel)}
+nav button.active{color:var(--ink);background:var(--cyan);border-color:var(--cyan);font-weight:600}
+.spacer{flex:1}
+.ghost{background:transparent;border:1px solid var(--line2);color:var(--muted);padding:6px 11px;border-radius:8px;font-size:12px}
+.ghost:hover{color:var(--text);border-color:var(--cyan)}
+
+main{flex:1;max-width:1180px;width:100%;margin:0 auto;padding:26px 22px 60px}
+.view{display:none;animation:fade .25s ease}
+.view.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+h1{font-size:24px;font-weight:700;letter-spacing:-.02em;margin:0 0 4px}
+h2{font-size:16px;font-weight:600;margin:0 0 14px}
+.sub{color:var(--muted);font-size:13px;margin:0 0 22px}
+
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+.grid{display:grid;gap:14px}
+
+/* today / curriculum */
+.daybar{display:flex;align-items:center;gap:14px;margin-bottom:18px;flex-wrap:wrap}
+.daychip{font-family:var(--mono);font-size:12px;color:var(--cyan);border:1px solid var(--line2);
+  padding:5px 11px;border-radius:999px}
+.focus{font-weight:600}
+.banner{border:1px solid var(--amber);background:rgba(251,191,36,.07);border-radius:10px;padding:10px 14px;
+  color:var(--amber);font-size:13px;margin-bottom:16px}
+.plist{display:grid;gap:10px}
+.prow{display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line);
+  border-radius:12px;padding:13px 16px;cursor:pointer;transition:border-color .15s,transform .15s}
+.prow:hover{border-color:var(--cyan);transform:translateX(2px)}
+.prow .cat{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  padding:3px 7px;border-radius:6px;border:1px solid var(--line2)}
+.cat.sql{color:var(--cyan)} .cat.proba{color:var(--violet)} .cat.stats{color:var(--amber)} .cat.apt{color:#7dd3fc}
+.prow .ttl{flex:1;font-weight:500}
+.prow .tag{font-family:var(--mono);font-size:11px;color:var(--faint)}
+.prow .done{color:var(--good);font-size:13px}
+.prow .diff{font-size:11px;color:var(--muted);font-family:var(--mono)}
+
+/* problem view */
+.pback{background:transparent;border:none;color:var(--muted);font-size:13px;padding:0;margin-bottom:14px}
+.pback:hover{color:var(--cyan)}
+.phead{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+.phead h1{flex:1;min-width:240px}
+.statement{font-size:15px;line-height:1.65;margin:10px 0 16px}
+.statement b{color:#fff;font-weight:600}
+.block{margin:14px 0}
+.block .lbl{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-bottom:7px}
+.examples,.constraints{display:grid;gap:6px}
+.examples div,.constraints div{font-family:var(--mono);font-size:12.5px;color:var(--muted);
+  background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 11px}
+.tables{display:flex;gap:14px;flex-wrap:wrap;margin:6px 0}
+table.db{border-collapse:collapse;font-family:var(--mono);font-size:12px}
+table.db caption{text-align:left;color:var(--cyan);font-size:11px;letter-spacing:.08em;margin-bottom:4px}
+table.db th,table.db td{border:1px solid var(--line2);padding:4px 9px;text-align:left}
+table.db th{background:var(--panel2);color:var(--muted);font-weight:600}
+table.db td{color:var(--text)}
+.dialect{border-left:2px solid var(--violet);background:rgba(167,139,250,.06);padding:9px 13px;border-radius:0 8px 8px 0;
+  font-size:13px;color:#cdbdf7;margin:4px 0 0}
+.dialect b{color:var(--violet)}
+
+.editorwrap{border:1px solid var(--line2);border-radius:12px;overflow:hidden;margin:14px 0}
+.CodeMirror{height:46vh!important;font-family:var(--mono)!important;font-size:13.5px;background:#0e131e!important}
+.CodeMirror-gutters{background:#0b0f18!important;border-right:1px solid var(--line)!important}
+.answerwrap{margin:14px 0}
+.scratch{width:100%;min-height:150px;background:#0e131e;border:1px solid var(--line2);border-radius:12px;
+  color:var(--text);font-family:var(--mono);font-size:13.5px;padding:12px;resize:vertical;line-height:1.6}
+.scratch:focus{outline:none;border-color:var(--cyan)}
+.finalrow{display:flex;align-items:center;gap:10px;margin-top:10px}
+.finalrow label{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.finalrow input{background:#0e131e;border:1px solid var(--line2);border-radius:8px;color:var(--text);
+  font-family:var(--mono);font-size:14px;padding:8px 12px;width:200px}
+.finalrow input:focus{outline:none;border-color:var(--amber)}
+
+.actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:8px 0 4px}
+.btn{border-radius:10px;padding:10px 18px;font-weight:600;font-size:14px;border:1px solid}
+.btn.run{background:var(--cyan);color:#06201d;border-color:var(--cyan)}
+.btn.run:hover{filter:brightness(1.08)}
+.btn.eval{background:transparent;color:var(--violet);border-color:var(--violet)}
+.btn.eval:hover{background:rgba(167,139,250,.1)}
+.btn:disabled{opacity:.5;cursor:default}
+.toggle{margin-left:auto;background:transparent;border:1px dashed var(--line2);color:var(--muted);
+  border-radius:9px;padding:7px 13px;font-size:12px}
+.toggle:hover{color:var(--amber);border-color:var(--amber)}
+
+.result{margin-top:14px}
+.verdict{border-radius:12px;padding:12px 15px;font-size:14px;border:1px solid;margin-top:12px;white-space:pre-wrap}
+.verdict.pass{border-color:var(--good);background:rgba(52,211,153,.07);color:#a7f3d0}
+.verdict.fail{border-color:var(--bad);background:rgba(248,113,113,.07);color:#fecaca}
+.verdict.err{border-color:var(--warn);background:rgba(251,191,36,.07);color:#fde68a}
+.verdict.info{border-color:var(--line2);background:var(--panel2);color:var(--muted)}
+.verdict .tagrow{margin-top:8px;display:flex;gap:6px;flex-wrap:wrap}
+.tagpill{font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid var(--violet);color:var(--violet)}
+.restable{overflow:auto;border:1px solid var(--line);border-radius:10px;margin-top:10px}
+.restable table{border-collapse:collapse;width:100%;font-family:var(--mono);font-size:12.5px}
+.restable th{background:var(--panel2);color:var(--cyan);text-align:left;padding:7px 11px;border-bottom:1px solid var(--line2);position:sticky;top:0}
+.restable td{padding:6px 11px;border-bottom:1px solid var(--line);color:var(--text)}
+.playbook{margin-top:12px;border:1px solid var(--line);border-radius:12px;padding:0 16px;display:none}
+.playbook.open{display:block;padding:14px 16px}
+.playbook .pb{margin:10px 0}
+.playbook .pb .lbl{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);margin-bottom:3px}
+.playbook .pb p{margin:0;font-size:13.5px;color:var(--muted)}
+.playbook .pb.formula p{font-family:var(--mono);color:var(--cyan)}
+
+/* weak points */
+.levelgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.lvl{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px 15px}
+.lvl .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.lvl .tg{font-family:var(--mono);font-size:12px;color:var(--text)}
+.lvl .badge{font-size:11px;font-weight:600;font-family:var(--mono);padding:2px 9px;border-radius:999px}
+.lvl .meta{font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-top:6px}
+.heatbar{height:7px;border-radius:999px;background:var(--line);margin-top:9px;overflow:hidden}
+.heatbar i{display:block;height:100%;border-radius:999px}
+.ranklist{display:grid;gap:8px;margin-top:6px}
+.rankrow{display:flex;align-items:center;gap:12px;font-family:var(--mono);font-size:13px;
+  background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:9px 13px}
+.rankrow .n{color:var(--bad);font-weight:600;width:22px}
+.rankrow .t{flex:1}
+.rankrow .drill{font-size:11px;color:var(--cyan);border:1px solid var(--line2);border-radius:7px;padding:3px 9px;background:transparent}
+.rankrow .drill:hover{border-color:var(--cyan)}
+
+/* trends */
+.spark{width:100%;height:90px;display:block}
+.sliprow{display:flex;align-items:center;gap:12px;font-family:var(--mono);font-size:13px;padding:8px 0;border-bottom:1px solid var(--line)}
+.sliprow .c{width:64px;color:var(--muted);text-transform:uppercase;font-size:11px;letter-spacing:.08em}
+.sliprow .bars{flex:1;display:flex;gap:14px;align-items:center}
+.sliprow .arrow{font-weight:700}
+.up{color:var(--bad)} .down{color:var(--good)} .flat{color:var(--muted)}
+.empty{color:var(--faint);font-family:var(--mono);font-size:13px;padding:20px;text-align:center;border:1px dashed var(--line2);border-radius:12px}
+.tiny{font-size:11px;color:var(--faint);font-family:var(--mono)}
+.cols2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:760px){.cols2{grid-template-columns:1fr}.CodeMirror{height:40vh!important}}
+.statline{display:flex;gap:18px;flex-wrap:wrap;font-family:var(--mono);font-size:12px;color:var(--muted);margin-bottom:14px}
+.statline b{color:var(--cyan)}
+.legend{font-family:var(--mono);font-size:10.5px;color:var(--faint);display:flex;gap:14px;flex-wrap:wrap;margin-top:8px}
+.dot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:middle}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><b>Quant&nbsp;Forge</b><span class="spark mono">⚒ temper your weak spots</span></div>
+  <nav id="nav">
+    <button data-v="today" class="active">Today</button>
+    <button data-v="bank">Bank</button>
+    <button data-v="weak">Weak points</button>
+    <button data-v="trends">Trends</button>
+    <button data-v="drill">⌖ Drill</button>
+  </nav>
+  <div class="spacer"></div>
+  <button class="ghost" id="expBtn">Export</button>
+  <button class="ghost" id="impBtn">Import</button>
+  <input type="file" id="impFile" accept="application/json" style="display:none">
+</header>
+
+<main>
+  <section id="today" class="view active"></section>
+  <section id="bank" class="view"></section>
+  <section id="problem" class="view"></section>
+  <section id="weak" class="view"></section>
+  <section id="trends" class="view"></section>
+  <section id="drill" class="view"></section>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/sql/sql.min.js"></script>
+<script type="module">
+import { PGlite } from "https://cdn.jsdelivr.net/npm/@electric-sql/pglite/dist/index.js";
+
+/* ---------- data ---------- */
+const BANK = [
+{
+"id": "sql-01",
+"category": "sql",
+"tag": "sql:group-having",
+"title": "Departments above ₹90k average",
+"difficulty": "Medium",
+"statement": "Return each department whose **average salary exceeds ₹90,000**. Output dept, the rounded average salary as avg_sal, and headcount n, ordered by avg_sal descending.",
+"examples": [
+"Eng has salaries 120000/95000/98000 → avg 104333 → included.",
+"Sales avg ≈ 70333 → excluded."
+],
+"constraints": [
+"Filter on the aggregate, not on individual rows."
+],
+"schema": "CREATE TABLE emp(id int,name text,dept text,salary int);\nINSERT INTO emp VALUES (1,'Asha','Eng',120000),(2,'Ravi','Eng',95000),(3,'Meera','Eng',98000),(4,'Dev','Data',105000),(5,'Sara','Data',88000),(6,'Imran','Sales',70000),(7,'Liu','Sales',72000),(8,'Noor','Sales',69000);",
+"starter": "-- Schema (already seeded in-browser via PGlite):\n-- CREATE TABLE emp(id int,name text,dept text,salary int);\n-- INSERT INTO emp VALUES (1,'Asha','Eng',120000),(2,'Ravi','Eng',95000),(3,'Meera','Eng',98000),(4,'Dev','Data',105000),(5,'Sara','Data',88000),(6,'Imran','Sales',70000),(7,'Liu','Sales',72000),(8,'Noor','Sales',69000);\n\nSELECT /* your query */ ;",
+"dialectNote": "ROUND(AVG(x)) returns a numeric in Postgres (often rendered as a string); MySQL ROUND() returns a number. AVG over integers is fine in both, but raw int/int division stays integer in PG & MySQL (unlike SQLite).",
+"expected": {
+"cols": [
+"dept",
+"avg_sal",
+"n"
+],
+"rows": [
+[
+"Eng",
+"104333",
+3
+],
+[
+"Data",
+"96500",
+2
+]
+]
+},
+"orderSensitive": true,
+"playbook": {
+"intuition": "‘Per department’ → GROUP BY dept. ‘Whose average exceeds’ is a condition on a group → HAVING, not WHERE.",
+"formula": "SELECT dept, ROUND(AVG(salary)), COUNT(*) FROM emp GROUP BY dept HAVING AVG(salary) > 90000",
+"pitfalls": "WHERE salary>90000 would filter rows before grouping — a different, wrong question. You cannot reference the alias avg_sal inside HAVING in standard SQL; repeat AVG(salary)."
+}
+},
+{
+"id": "sql-02",
+"category": "sql",
+"tag": "sql:null",
+"title": "Anti-join with a NULL in the list",
+"difficulty": "Medium",
+"statement": "Return id, name of staff who are **NOT** in the leavers table, ordered by id. Note: leavers contains a NULL row.",
+"examples": [
+"staff ids 1,2,3,4; leavers {2, NULL} → answer 1,3,4."
+],
+"constraints": [
+"The NULL in leavers is the whole point — handle it."
+],
+"schema": "CREATE TABLE staff(id int, name text, mgr_id int);\nINSERT INTO staff VALUES (1,'Asha',NULL),(2,'Ravi',1),(3,'Meera',1),(4,'Dev',2);\nCREATE TABLE leavers(id int);\nINSERT INTO leavers VALUES (2),(NULL);",
+"starter": "-- Schema (already seeded in-browser via PGlite):\n-- CREATE TABLE staff(id int, name text, mgr_id int);\n-- INSERT INTO staff VALUES (1,'Asha',NULL),(2,'Ravi',1),(3,'Meera',1),(4,'Dev',2);\n-- CREATE TABLE leavers(id int);\n-- INSERT INTO leavers VALUES (2),(NULL);\n\nSELECT /* your query */ ;",
+"dialectNote": "NOT IN (SELECT id FROM leavers) returns ZERO rows in BOTH Postgres and MySQL when the list contains NULL, because `x <> NULL` is UNKNOWN. Use NOT EXISTS or a LEFT JOIN … IS NULL anti-join.",
+"expected": {
+"cols": [
+"id",
+"name"
+],
+"rows": [
+[
+1,
+"Asha"
+],
+[
+3,
+"Meera"
+],
+[
+4,
+"Dev"
+]
+]
+},
+"orderSensitive": true,
+"playbook": {
+"intuition": "NOT IN expands to a chain of <> ANDs. One NULL makes every comparison UNKNOWN, so nothing qualifies.",
+"formula": "… WHERE NOT EXISTS (SELECT 1 FROM leavers l WHERE l.id = s.id)",
+"pitfalls": "This is the classic = NULL / NOT IN trap. NOT EXISTS is NULL-safe; NOT IN is not."
+}
+},
+{
+"id": "sql-03",
+"category": "sql",
+"tag": "sql:window",
+"title": "Top earner per department (with ties)",
+"difficulty": "Medium",
+"statement": "Return dept, name, salary of the **highest-paid employee(s) in each department**, including ties. Order by dept, then name.",
+"examples": [
+"Data: Dev 105000 (Sara/Imran 88000 excluded). Eng: Asha 120000."
+],
+"constraints": [
+"If two people tie for the top, return both."
+],
+"schema": "CREATE TABLE emp(id int,name text,dept text,salary int);\nINSERT INTO emp VALUES (1,'Asha','Eng',120000),(2,'Ravi','Eng',95000),(3,'Meera','Eng',95000),(4,'Dev','Data',105000),(5,'Sara','Data',88000),(6,'Imran','Data',88000);",
+"starter": "-- Schema (already seeded in-browser via PGlite):\n-- CREATE TABLE emp(id int,name text,dept text,salary int);\n-- INSERT INTO emp VALUES (1,'Asha','Eng',120000),(2,'Ravi','Eng',95000),(3,'Meera','Eng',95000),(4,'Dev','Data',105000),(5,'Sara','Data',88000),(6,'Imran','Data',88000);\n\nSELECT /* your query */ ;",
+"dialectNote": "Window functions require MySQL 8.0+. On MySQL ≤5.7 you'd emulate with a correlated subquery (WHERE salary = (SELECT MAX...)).",
+"expected": {
+"cols": [
+"dept",
+"name",
+"salary"
+],
+"rows": [
+[
+"Data",
+"Dev",
+105000
+],
+[
+"Eng",
+"Asha",
+120000
+]
+]
+},
+"orderSensitive": true,
+"playbook": {
+"intuition": "‘Per department’ ranking → PARTITION BY dept. ‘Include ties’ → RANK or DENSE_RANK, not ROW_NUMBER (which breaks ties arbitrarily).",
+"formula": "DENSE_RANK() OVER (PARTITION BY dept ORDER BY salary DESC) then keep rk=1",
+"pitfalls": "ROW_NUMBER would drop a tied second person. Forgetting PARTITION BY ranks globally."
+}
+},
+{
+"id": "sql-04",
+"category": "sql",
+"tag": "sql:window",
+"title": "Running total & month-over-month",
+"difficulty": "Medium",
+"statement": "For each month return ym (YYYY-MM), amt, the **running total** run_tot, and the **month-over-month change** mom (this month minus previous). Order by month.",
+"examples": [
+"Jan 100 → run_tot 100, mom NULL. Feb 140 → run_tot 240, mom 40."
+],
+"constraints": [
+"First month's mom is NULL."
+],
+"schema": "CREATE TABLE sales(mon date, amt int);\nINSERT INTO sales VALUES ('2024-01-01',100),('2024-02-01',140),('2024-03-01',120),('2024-04-01',200);",
+"starter": "-- Schema (already seeded in-browser via PGlite):\n-- CREATE TABLE sales(mon date, amt int);\n-- INSERT INTO sales VALUES ('2024-01-01',100),('2024-02-01',140),('2024-03-01',120),('2024-04-01',200);\n\nSELECT /* your query */ ;",
+"dialectNote": "Postgres: to_char(mon,'YYYY-MM'). MySQL: DATE_FORMAT(mon,'%Y-%m'). LAG/SUM-OVER need MySQL 8.0+.",
+"expected": {
+"cols": [
+"ym",
+"amt",
+"run_tot",
+"mom"
+],
+"rows": [
+[
+"2024-01",
+100,
+100,
+null
+],
+[
+"2024-02",
+140,
+240,
+40
+],
+[
+"2024-03",
+120,
+360,
+-20
+],
+[
+"2024-04",
+200,
+560,
+80
+]
+]
+},
+"orderSensitive": true,
+"playbook": {
+"intuition": "Running total = SUM() OVER (ORDER BY mon) with the default frame (unbounded preceding → current row). MoM = current minus LAG(prev).",
+"formula": "SUM(amt) OVER(ORDER BY mon); amt - LAG(amt) OVER(ORDER BY mon)",
+"pitfalls": "An explicit ROWS frame matters once you add ties; default RANGE can over-sum on duplicate ORDER BY keys."
+}
+},
+{
+"id": "sql-05",
+"category": "sql",
+"tag": "sql:subquery-cte",
+"title": "Second-highest distinct salary",
+"difficulty": "Easy",
+"statement": "Return the **second-highest distinct salary** as second_highest.",
+"examples": [
+"Salaries {120000,105000,98000,98000,95000} → second highest distinct = 105000."
+],
+"constraints": [
+"Distinct — duplicate top values count once."
+],
+"schema": "CREATE TABLE emp(id int,name text,salary int);\nINSERT INTO emp VALUES (1,'Asha',120000),(2,'Ravi',95000),(3,'Meera',98000),(4,'Dev',105000),(5,'Sara',98000);",
+"starter": "-- Schema (already seeded in-browser via PGlite):\n-- CREATE TABLE emp(id int,name text,salary int);\n-- INSERT INTO emp VALUES (1,'Asha',120000),(2,'Ravi',95000),(3,'Meera',98000),(4,'Dev',105000),(5,'Sara',98000);\n\nSELECT /* your query */ ;",
+"dialectNote": "Subquery form is portable. LIMIT 1 OFFSET 1 works in PG & MySQL; MSSQL uses OFFSET 1 ROWS FETCH NEXT 1 ROW (or TOP).",
+"expected": {
+"cols": [
+"second_highest"
+],
+"rows": [
+[
+105000
+]
+]
+},
+"orderSensitive": false,
+"playbook": {
+"intuition": "Second highest = the max of everything strictly below the overall max.",
+"formula": "SELECT MAX(salary) FROM emp WHERE salary < (SELECT MAX(salary) FROM emp)",
+"pitfalls": "OFFSET/LIMIT on non-distinct rows returns a duplicate, not the 2nd distinct value. Returns NULL if only one distinct salary exists — usually desired."
+}
+},
+{
+"id": "sql-06",
+"category": "sql",
+"tag": "sql:set-ops",
+"title": "Bought but never refunded",
+"difficulty": "Easy",
+"statement": "Return cust ids that appear in bought but **not** in refunded, ordered by cust.",
+"examples": [
+"bought {1,2,3,4}, refunded {2,4} → {1,3}."
+],
+"constraints": [
+"Set difference."
+],
+"schema": "CREATE TABLE bought(cust int);\nINSERT INTO bought VALUES (1),(2),(3),(4);\nCREATE TABLE refunded(cust int);\nINSERT INTO refunded VALUES (2),(4);",
+"starter": "-- Schema (already seeded in-browser via PGlite):\n-- CREATE TABLE bought(cust int);\n-- INSERT INTO bought VALUES (1),(2),(3),(4);\n-- CREATE TABLE refunded(cust int);\n-- INSERT INTO refunded VALUES (2),(4);\n\nSELECT /* your query */ ;",
+"dialectNote": "Postgres has EXCEPT. MySQL had NO EXCEPT until 8.0.31 — emulate with LEFT JOIN … WHERE r.cust IS NULL or NOT EXISTS. EXCEPT also de-duplicates (EXCEPT ALL keeps dups).",
+"expected": {
+"cols": [
+"cust"
+],
+"rows": [
+[
+1
+],
+[
+3
+]
+]
+},
+"orderSensitive": true,
+"playbook": {
+"intuition": "‘In A but not B’ is exactly set difference → EXCEPT.",
+"formula": "SELECT cust FROM bought EXCEPT SELECT cust FROM refunded",
+"pitfalls": "On MySQL this query simply won't run on older versions — know the anti-join rewrite cold."
+}
+},
+{
+"id": "sql-07",
+"category": "sql",
+"tag": "sql:window",
+"title": "Latest row per user (dedup)",
+"difficulty": "Medium",
+"statement": "Return uid, ts, val for the **most recent event per user**. Order by uid.",
+"examples": [
+"User 1's latest is 2024-05-02 ('b'); user 2's is 2024-05-03 ('d')."
+],
+"constraints": [
+"One row per user — the newest by ts."
+],
+"schema": "CREATE TABLE events(uid int, ts timestamp, val text);\nINSERT INTO events VALUES (1,'2024-05-01 10:00','a'),(1,'2024-05-02 09:00','b'),(2,'2024-05-01 08:00','c'),(2,'2024-05-03 08:00','d');",
+"starter": "-- Schema (already seeded in-browser via PGlite):\n-- CREATE TABLE events(uid int, ts timestamp, val text);\n-- INSERT INTO events VALUES (1,'2024-05-01 10:00','a'),(1,'2024-05-02 09:00','b'),(2,'2024-05-01 08:00','c'),(2,'2024-05-03 08:00','d');\n\nSELECT /* your query */ ;",
+"dialectNote": "ROW_NUMBER needs MySQL 8+. Postgres also offers DISTINCT ON (uid) … ORDER BY uid, ts DESC — a PG-only shortcut with no MySQL equivalent.",
+"expected": {
+"cols": [
+"uid",
+"ts",
+"val"
+],
+"rows": [
+[
+1,
+"2024-05-02T09:00:00.000Z",
+"b"
+],
+[
+2,
+"2024-05-03T08:00:00.000Z",
+"d"
+]
+]
+},
+"orderSensitive": true,
+"playbook": {
+"intuition": "Deduplicate by ranking rows within each user newest-first, then keep rank 1.",
+"formula": "ROW_NUMBER() OVER(PARTITION BY uid ORDER BY ts DESC) → keep rn=1",
+"pitfalls": "Use ROW_NUMBER (exactly one row) here, not RANK (could return ties)."
+}
+},
+{
+"id": "sql-08",
+"category": "sql",
+"tag": "sql:window",
+"title": "Longest login streak (gaps & islands)",
+"difficulty": "Hard",
+"statement": "For each user return uid and the length of their **longest run of consecutive daily logins** as longest_streak.",
+"examples": [
+"Logins Jun 1,2,3,6,7 → runs of length 3 and 2 → answer 3."
+],
+"constraints": [
+"Consecutive = calendar days one apart."
+],
+"schema": "CREATE TABLE logins(uid int, d date);\nINSERT INTO logins VALUES (1,'2024-06-01'),(1,'2024-06-02'),(1,'2024-06-03'),(1,'2024-06-06'),(1,'2024-06-07');",
+"starter": "-- Schema (already seeded in-browser via PGlite):\n-- CREATE TABLE logins(uid int, d date);\n-- INSERT INTO logins VALUES (1,'2024-06-01'),(1,'2024-06-02'),(1,'2024-06-03'),(1,'2024-06-06'),(1,'2024-06-07');\n\nSELECT /* your query */ ;",
+"dialectNote": "Postgres: date − row_number gives a constant per island (date minus int). MySQL: subtract via DATE_SUB(d, INTERVAL rn DAY) or use TO_DAYS(d)-rn to form the group key.",
+"expected": {
+"cols": [
+"uid",
+"longest_streak"
+],
+"rows": [
+[
+1,
+3
+]
+]
+},
+"orderSensitive": true,
+"playbook": {
+"intuition": "On a consecutive run, (date − its row number) is constant — that constant labels the island. Group by it and count.",
+"formula": "grp = d - ROW_NUMBER() OVER(ORDER BY d); GROUP BY grp; MAX(COUNT)",
+"pitfalls": "Cast the date arithmetic to int in PG. Reset the row_number per user with PARTITION BY uid."
+}
+},
+{
+"id": "sql-09",
+"category": "sql",
+"tag": "sql:joins",
+"title": "Spend per customer incl. zeros",
+"difficulty": "Easy",
+"statement": "Return every customer's id, name, and total spend (0 if they have no orders). Order by id.",
+"examples": [
+"Customer C has no orders → spend 0."
+],
+"constraints": [
+"Customers with no orders must still appear."
+],
+"schema": "CREATE TABLE cust(id int, name text);\nINSERT INTO cust VALUES (1,'A'),(2,'B'),(3,'C');\nCREATE TABLE ord(id int, cust_id int, total int);\nINSERT INTO ord VALUES (10,1,50),(11,1,70),(12,2,30);",
+"starter": "-- Schema (already seeded in-browser via PGlite):\n-- CREATE TABLE cust(id int, name text);\n-- INSERT INTO cust VALUES (1,'A'),(2,'B'),(3,'C');\n-- CREATE TABLE ord(id int, cust_id int, total int);\n-- INSERT INTO ord VALUES (10,1,50),(11,1,70),(12,2,30);\n\nSELECT /* your query */ ;",
+"dialectNote": "LEFT JOIN + COALESCE is fully portable across PG and MySQL.",
+"expected": {
+"cols": [
+"id",
+"name",
+"spend"
+],
+"rows": [
+[
+1,
+"A",
+120
+],
+[
+2,
+"B",
+30
+],
+[
+3,
+"C",
+0
+]
+]
+},
+"orderSensitive": true,
+"playbook": {
+"intuition": "‘Every customer, even with none’ → LEFT JOIN from customers; SUM(NULL) is NULL so wrap in COALESCE(…,0).",
+"formula": "cust LEFT JOIN ord … GROUP BY c.id,c.name; COALESCE(SUM(total),0)",
+"pitfalls": "An INNER JOIN silently drops zero-order customers. GROUP BY must list every non-aggregated selected column (strict in PG; MySQL may allow sloppier grouping with ONLY_FULL_GROUP_BY off)."
+}
+},
+{
+"id": "sql-10",
+"category": "sql",
+"tag": "sql:subquery-cte",
+"title": "Org depth via recursive CTE",
+"difficulty": "Hard",
+"statement": "Using a recursive CTE, return each person's name and their **level** in the hierarchy (CEO = 1). Order by level.",
+"examples": [
+"CEO=1, VP=2, Dir=3, Lead=4, IC=5."
+],
+"constraints": [
+"Root has mgr IS NULL."
+],
+"schema": "CREATE TABLE org(id int, name text, mgr int);\nINSERT INTO org VALUES (1,'CEO',NULL),(2,'VP',1),(3,'Dir',2),(4,'Lead',3),(5,'IC',4);",
+"starter": "-- Schema (already seeded in-browser via PGlite):\n-- CREATE TABLE org(id int, name text, mgr int);\n-- INSERT INTO org VALUES (1,'CEO',NULL),(2,'VP',1),(3,'Dir',2),(4,'Lead',3),(5,'IC',4);\n\nSELECT /* your query */ ;",
+"dialectNote": "WITH RECURSIVE works in Postgres and MySQL 8.0+ (the RECURSIVE keyword is required in both). MySQL caps recursion via cte_max_recursion_depth.",
+"expected": {
+"cols": [
+"name",
+"lvl"
+],
+"rows": [
+[
+"CEO",
+1
+],
+[
+"VP",
+2
+],
+[
+"Dir",
+3
+],
+[
+"Lead",
+4
+],
+[
+"IC",
+5
+]
+]
+},
+"orderSensitive": true,
+"playbook": {
+"intuition": "Anchor = the root (mgr IS NULL) at level 1. Recursive step joins children to their parent, adding 1 each hop.",
+"formula": "WITH RECURSIVE chain AS (root … UNION ALL child JOIN chain ON child.mgr=chain.id)",
+"pitfalls": "Forgetting UNION ALL (UNION dedups and can stall). A cycle with no termination loops forever."
+}
+},
+{
+"id": "prob-01",
+"category": "proba",
+"tag": "proba:combinatorics",
+"title": "Two reds without replacement",
+"difficulty": "Easy",
+"statement": "A bag holds **5 red** and **3 blue** balls. You draw **2 at random without replacement**. What is P(both red)?",
+"examples": [
+"Total ways to pick 2 of 8 = C(8,2)=28."
+],
+"constraints": [],
+"answer": 0.357143,
+"accept": [
+"5/14",
+"0.357",
+"0.3571",
+"35.7%"
+],
+"tol": 0.005,
+"playbook": {
+"intuition": "Without replacement → count favorable pairs over total pairs, or multiply sequential probabilities 5/8 · 4/7.",
+"formula": "C(5,2)/C(8,2) = 10/28 = 5/14 ≈ 0.357",
+"pitfalls": "Don't use 5/8·5/8 — the second draw isn't independent (no replacement)."
+}
+},
+{
+"id": "prob-02",
+"category": "proba",
+"tag": "proba:bayes",
+"title": "Disease test base rate",
+"difficulty": "Medium",
+"statement": "A disease affects **1%** of people. A test has **99% sensitivity** (P(+|disease)) and **95% specificity** (P(−|healthy)). A random person tests **positive**. What is P(disease | positive)?",
+"examples": [
+"Healthy false-positive rate = 1 − 0.95 = 0.05."
+],
+"constraints": [],
+"answer": 0.166667,
+"accept": [
+"1/6",
+"0.1667",
+"0.167",
+"16.7%"
+],
+"tol": 0.005,
+"playbook": {
+"intuition": "Most positives come from the huge healthy majority. Compare the tiny true-positive mass (.01·.99) to total positive mass.",
+"formula": "(.99·.01)/(.99·.01 + .05·.99) = .0099/.0594 = 1/6 ≈ 0.167",
+"pitfalls": "Base-rate neglect: people guess ~99%. Don't confuse P(+|disease) with P(disease|+)."
+}
+},
+{
+"id": "prob-03",
+"category": "proba",
+"tag": "proba:expectation",
+"title": "Expected profit of a die game",
+"difficulty": "Easy",
+"statement": "You pay **₹2** to roll a fair die and win **₹(face value)**. What is your **expected profit** per play?",
+"examples": [
+"E[face] = (1+2+3+4+5+6)/6 = 3.5."
+],
+"constraints": [],
+"answer": 1.5,
+"accept": [
+"1.5",
+"3/2"
+],
+"tol": 0.001,
+"playbook": {
+"intuition": "Expected winnings minus cost.",
+"formula": "E[profit] = 3.5 − 2 = 1.5",
+"pitfalls": "Profit, not gross winnings — subtract the ₹2 stake."
+}
+},
+{
+"id": "prob-04",
+"category": "proba",
+"tag": "proba:distributions",
+"title": "Poisson: exactly five calls",
+"difficulty": "Medium",
+"statement": "Calls arrive as a Poisson process at **λ = 3 per hour**. What is P(**exactly 5** calls in an hour)?",
+"examples": [
+"P(X=k) = e^{−λ} λ^k / k!"
+],
+"constraints": [],
+"answer": 0.100819,
+"accept": [
+"0.1008",
+"0.101"
+],
+"tol": 0.002,
+"playbook": {
+"intuition": "Poisson models counts of rare independent events at a fixed rate.",
+"formula": "e^{−3}·3^5/5! = e^{−3}·243/120 ≈ 0.1008",
+"pitfalls": "Use k! in the denominator; don't reuse the binomial coefficient here."
+}
+},
+{
+"id": "prob-05",
+"category": "proba",
+"tag": "proba:expectation",
+"title": "Rolls until first six",
+"difficulty": "Easy",
+"statement": "You roll a fair die repeatedly until you get a **6**. What is the **expected number of rolls**?",
+"examples": [
+"Each roll succeeds with p=1/6."
+],
+"constraints": [],
+"answer": 6.0,
+"accept": [
+"6"
+],
+"tol": 0.001,
+"playbook": {
+"intuition": "Geometric distribution: expected trials to first success = 1/p.",
+"formula": "E = 1/p = 1/(1/6) = 6",
+"pitfalls": "It's 1/p = 6, not p = 1/6 as the answer."
+}
+},
+{
+"id": "stat-01",
+"category": "stats",
+"tag": "stats:ci",
+"title": "95% CI half-width",
+"difficulty": "Medium",
+"statement": "A sample of **n=100** has mean **50** and sd **10**. Give the **half-width** (margin of error) of the 95% confidence interval for the mean (use z=1.96).",
+"examples": [
+"SE = sd/√n."
+],
+"constraints": [],
+"answer": 1.96,
+"accept": [
+"1.96",
+"[48.04,51.96]",
+"48.04 to 51.96"
+],
+"tol": 0.02,
+"playbook": {
+"intuition": "Margin = z · standard error of the mean.",
+"formula": "1.96 · 10/√100 = 1.96 · 1 = 1.96 → CI [48.04, 51.96]",
+"pitfalls": "Use SE = sd/√n, not sd itself. SE shrinks with √n."
+}
+},
+{
+"id": "stat-02",
+"category": "stats",
+"tag": "stats:distributions",
+"title": "Normal tail probability",
+"difficulty": "Medium",
+"statement": "Scores are **N(μ=100, σ=15)**. What is P(**X > 130**)?",
+"examples": [
+"z = (130−100)/15 = 2."
+],
+"constraints": [],
+"answer": 0.0228,
+"accept": [
+"0.0228",
+"2.28%",
+"P(Z>2)"
+],
+"tol": 0.003,
+"playbook": {
+"intuition": "Standardize to z, then read the upper tail.",
+"formula": "P(Z > 2) ≈ 0.0228 (the ~2.5% beyond +2σ, precisely 0.0228)",
+"pitfalls": "Two-sigma upper tail is 2.28%, not 5% (that's two-tailed)."
+}
+},
+{
+"id": "stat-03",
+"category": "stats",
+"tag": "stats:inference",
+"title": "Standard error of the mean",
+"difficulty": "Easy",
+"statement": "Population sd is **10**, sample size **n=100**. What is the **standard error of the mean**?",
+"examples": [
+"SE = σ/√n."
+],
+"constraints": [],
+"answer": 1.0,
+"accept": [
+"1",
+"SE=1"
+],
+"tol": 0.001,
+"playbook": {
+"intuition": "SE measures variability of the sample mean, not of individuals.",
+"formula": "SE = 10/√100 = 1",
+"pitfalls": "Standard error ≠ standard deviation. Divide by √n."
+}
+},
+{
+"id": "stat-04",
+"category": "stats",
+"tag": "stats:hypothesis-test",
+"title": "One-sample z statistic",
+"difficulty": "Medium",
+"statement": "H₀: μ=50. Sample mean **52**, σ=10, **n=100**. Compute the **z test statistic**.",
+"examples": [
+"z = (x̄ − μ₀)/(σ/√n)."
+],
+"constraints": [],
+"answer": 2.0,
+"accept": [
+"2",
+"z=2"
+],
+"tol": 0.01,
+"playbook": {
+"intuition": "How many standard errors the sample mean sits from the null mean.",
+"formula": "z = (52−50)/(10/√100) = 2/1 = 2",
+"pitfalls": "Denominator is SE = σ/√n, not σ. |z|=2 ≈ borderline significant two-tailed (p≈0.046)."
+}
+},
+{
+"id": "stat-05",
+"category": "stats",
+"tag": "stats:regression",
+"title": "R-squared from correlation",
+"difficulty": "Easy",
+"statement": "A simple linear regression has correlation **r = 0.9**. What is **R²** (coefficient of determination)?",
+"examples": [
+"For simple regression R² = r²."
+],
+"constraints": [],
+"answer": 0.81,
+"accept": [
+"0.81",
+"81%"
+],
+"tol": 0.005,
+"playbook": {
+"intuition": "R² = fraction of variance explained = r² in simple regression.",
+"formula": "R² = 0.9² = 0.81 (81% of variance explained)",
+"pitfalls": "R² is r squared, not r. Don't report 0.9."
+}
+},
+{
+"id": "apt-01",
+"category": "apt",
+"tag": "apt:speed-distance",
+"title": "Average speed, equal distances",
+"difficulty": "Easy",
+"statement": "A car covers a distance at **40 km/h** and returns the same distance at **60 km/h**. What is the **average speed** for the whole trip?",
+"examples": [
+"Equal distances → use the harmonic mean."
+],
+"constraints": [],
+"answer": 48.0,
+"accept": [
+"48",
+"48 km/h"
+],
+"tol": 0.01,
+"playbook": {
+"intuition": "Average speed = total distance / total time. Equal distances → harmonic mean of speeds.",
+"formula": "2·40·60/(40+60) = 4800/100 = 48 km/h",
+"pitfalls": "Not the arithmetic mean 50 — more time is spent at the slower speed."
+}
+},
+{
+"id": "apt-02",
+"category": "apt",
+"tag": "apt:work",
+"title": "Combined work rate",
+"difficulty": "Easy",
+"statement": "A finishes a job in **12 days**, B in **18 days**. Working **together**, how many days to finish?",
+"examples": [
+"Rates add: 1/12 + 1/18 per day."
+],
+"constraints": [],
+"answer": 7.2,
+"accept": [
+"7.2",
+"36/5"
+],
+"tol": 0.01,
+"playbook": {
+"intuition": "Add rates, then invert. LCM(12,18)=36 units of work.",
+"formula": "1/(1/12 + 1/18) = 1/(5/36) = 36/5 = 7.2 days",
+"pitfalls": "Add rates, never average the days (10.5 is wrong)."
+}
+},
+{
+"id": "apt-03",
+"category": "apt",
+"tag": "apt:percentages",
+"title": "Successive discounts",
+"difficulty": "Easy",
+"statement": "A price gets **two successive discounts of 20% then 10%**. What is the **single equivalent discount** percentage?",
+"examples": [
+"Remaining fraction = 0.8 · 0.9."
+],
+"constraints": [],
+"answer": 28.0,
+"accept": [
+"28",
+"28%"
+],
+"tol": 0.01,
+"playbook": {
+"intuition": "Multiply the surviving fractions; the discount is one minus that.",
+"formula": "1 − 0.8·0.9 = 1 − 0.72 = 0.28 → 28%",
+"pitfalls": "Not 30% — discounts compound, they don't add."
+}
+},
+{
+"id": "apt-04",
+"category": "apt",
+"tag": "apt:counting",
+"title": "Arrange so two aren't adjacent",
+"difficulty": "Medium",
+"statement": "In how many ways can **5 distinct books** be arranged in a row so that **2 particular books are NOT adjacent**?",
+"examples": [
+"Total arrangements 5! = 120."
+],
+"constraints": [],
+"answer": 72,
+"accept": [
+"72"
+],
+"tol": 0.5,
+"playbook": {
+"intuition": "Total minus the bad cases. Treat the 2 as glued (a block) for the bad count.",
+"formula": "5! − 2·4! = 120 − 48 = 72",
+"pitfalls": "The glued block has 2! internal orders — multiply by 2. Complementary counting avoids messy casework."
+}
+},
+{
+"id": "apt-05",
+"category": "apt",
+"tag": "apt:ratios",
+"title": "Divide in a ratio",
+"difficulty": "Easy",
+"statement": "Split **₹40** between two people in the ratio **3:5**. What is the **smaller** share?",
+"examples": [
+"Total parts = 3+5 = 8."
+],
+"constraints": [],
+"answer": 15.0,
+"accept": [
+"15"
+],
+"tol": 0.01,
+"playbook": {
+"intuition": "Each part = total/(sum of ratio terms); smaller share = 3 parts.",
+"formula": "3 · 40/8 = 3 · 5 = ₹15",
+"pitfalls": "Scale by parts, not by the raw ratio numbers. 8 parts, not 2."
+}
+}
+];
+const byId = Object.fromEntries(BANK.map(p=>[p.id,p]));
+
+const VOCAB = {
+  sql:["joins","window","group-having","subquery-cte","null","set-ops","dialect","perf","datetime","dedup"],
+  stats:["hypothesis-test","distributions","regression","ci","inference"],
+  proba:["conditional","bayes","combinatorics","expectation","distributions","independence"],
+  apt:["arithmetic","ratios","speed-distance","work","counting","data-interp","logic","percentages"]
+};
+const ALLTAGS = Object.entries(VOCAB).flatMap(([c,a])=>a.map(t=>c+":"+t));
+// his documented baseline pitfalls -> seed weakness
+const BASELINE = ["proba:bayes","proba:combinatorics","proba:conditional","stats:hypothesis-test","stats:inference",
+  "sql:null","sql:window","sql:dialect","sql:group-having","apt:speed-distance"];
+
+/* ---------- 30-day curriculum spine ---------- */
+const SPINE = [
+ ["sql:joins","Joins: inner / left / self / anti"],
+ ["sql:group-having","GROUP BY & HAVING vs WHERE"],
+ ["sql:null","NULL semantics & anti-joins"],
+ ["sql:subquery-cte","Subqueries & correlated subqueries"],
+ ["sql:set-ops","Set ops: UNION / EXCEPT / INTERSECT"],
+ ["sql:dedup","Deduplication & latest-per-key"],
+ ["sql:group-having","SQL basics — mixed review"],
+ ["sql:window","Window functions: ranking"],
+ ["sql:window","Top-N per group (RANK/DENSE_RANK)"],
+ ["sql:window","Running totals, LAG / LEAD, frames"],
+ ["sql:subquery-cte","CTEs & recursive CTEs"],
+ ["sql:window","Gaps & islands"],
+ ["sql:dialect","Postgres ⇄ MySQL dialect drills"],
+ ["sql:window","SQL advanced — mixed review"],
+ ["proba:combinatorics","Combinatorics & counting"],
+ ["proba:conditional","Conditional probability"],
+ ["proba:bayes","Bayes' theorem & base rates"],
+ ["proba:expectation","Expectation & variance"],
+ ["proba:distributions","Common distributions"],
+ ["proba:independence","Independence & total probability"],
+ ["proba:bayes","Probability — mixed review"],
+ ["stats:distributions","Distributions & z-scores"],
+ ["stats:ci","Sampling, CLT & confidence intervals"],
+ ["stats:hypothesis-test","Hypothesis testing (t/z/χ²)"],
+ ["stats:regression","Regression & R²"],
+ ["stats:inference","SE vs SD, p-values, errors"],
+ ["stats:hypothesis-test","A/B testing & inference review"],
+ ["apt:speed-distance","Aptitude: speed / work / rates"],
+ ["apt:counting","Aptitude: ratios / % / counting"],
+ ["apt:data-interp","Mixed mock — all topics"]
+];
+
+/* ---------- state ---------- */
+const LS="quantforge_v1";
+function freshState(){
+  const topics={};
+  ALLTAGS.forEach(t=>topics[t]={att:0,pass:0,slip:0,scores:[]});
+  BASELINE.forEach(t=>{ if(topics[t]) topics[t].baseline=1; });
+  return {day:1,solved:{},evalLog:[],topics,dayScore:{}};
+}
+let S = load();
+function load(){ try{const r=JSON.parse(localStorage.getItem(LS)); if(r&&r.topics) return r;}catch(e){} return freshState(); }
+function save(){ localStorage.setItem(LS,JSON.stringify(S)); }
+
+/* ---------- proficiency levels ---------- */
+const LEVELS=["Untested","Novice","Developing","Competent","Proficient","Strong","Mastered"];
+const HEAT=["#3a4456","#5b6b8a","#6d8ad8","#34e0d2","#7bd99a","#fbbf24","#f59e0b"];
+function levelOf(t){
+  const s=S.topics[t]||{att:0,pass:0,slip:0};
+  if(s.att===0) return s.baseline?1:0;             // baseline pitfalls start at Novice, else Untested
+  const passRate=s.pass/s.att, slipRate=s.slip/Math.max(s.att,1);
+  let score=passRate*100 - slipRate*18 - (s.baseline?6:0);
+  score=Math.max(0,Math.min(100,score));
+  // 0..100 -> 1..6 (Untested reserved for att===0)
+  const idx=1+Math.round(score/100*5);
+  return Math.max(1,Math.min(6,idx));
+}
+function weaknessScore(t){
+  const s=S.topics[t]||{att:0,pass:0,slip:0};
+  if(s.att===0) return s.baseline?55:35;           // untested baseline ranks above untested-unseen
+  const passRate=s.pass/s.att, slipRate=s.slip/Math.max(s.att,1);
+  return Math.round((1-passRate)*70 + slipRate*60 + (s.baseline?8:0));
+}
+
+/* ---------- helpers ---------- */
+const $=(s,r=document)=>r.querySelector(s);
+const el=(t,c,h)=>{const e=document.createElement(t); if(c)e.className=c; if(h!=null)e.innerHTML=h; return e;};
+const esc=s=>String(s==null?"":s).replace(/[&<>]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[m]));
+const md=s=>esc(s).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>");
+function catLabel(c){return {sql:"SQL",proba:"PROBA",stats:"STATS",apt:"APT"}[c]||c;}
+
+/* parse a small DDL+seed into displayable sample tables */
+function parseTables(schema){
+  const tables={};
+  const ddl=[...schema.matchAll(/CREATE TABLE\s+(\w+)\s*\(([^)]*)\)/gi)];
+  ddl.forEach(m=>{ tables[m[1]]={cols:m[2].split(",").map(c=>c.trim().split(/\s+/)[0]),rows:[]}; });
+  const ins=[...schema.matchAll(/INSERT INTO\s+(\w+)[^V]*VALUES\s*([\s\S]*?);/gi)];
+  ins.forEach(m=>{
+    const tbl=tables[m[1]]; if(!tbl) return;
+    const tuples=[...m[2].matchAll(/\(([^)]*)\)/g)];
+    tuples.forEach(t=>{
+      const vals=t[1].split(",").map(v=>{v=v.trim();
+        if(/^null$/i.test(v))return "∅";
+        return v.replace(/^'|'$/g,"");});
+      tbl.rows.push(vals);
+    });
+  });
+  return tables;
+}
+
+/* ---------- PGlite ---------- */
+let pg=null, pgReady=null;
+async function getPg(){
+  if(pg) return pg;
+  if(!pgReady) pgReady=PGlite.create().then(db=>{pg=db;return db;});
+  return pgReady;
+}
+async function runProblemSql(prob,query){
+  const db=await getPg();
+  await db.exec("DROP SCHEMA public CASCADE; CREATE SCHEMA public;");
+  await db.exec(prob.schema);
+  const r=await db.query(query);
+  return {cols:r.fields.map(f=>f.name), rows:r.rows.map(o=>r.fields.map(f=>o[f.name]))};
+}
+function normCell(v){
+  if(v==null) return "";
+  if(typeof v==="object"){ try{return new Date(v).toISOString();}catch(e){return JSON.stringify(v);} }
+  const n=Number(v);
+  if(v!=="" && !isNaN(n) && isFinite(n)) return String(Math.abs(n)<1e-9?0:+n.toFixed(6));
+  return String(v).trim();
+}
+function rowKey(r){return r.map(normCell).join("§");}
+function diffResult(got,exp,orderSensitive){
+  if(got.cols.length!==exp.cols.length)
+    return {ok:false,msg:`Column count mismatch — expected ${exp.cols.length}, got ${got.cols.length}.`};
+  if(got.rows.length!==exp.rows.length)
+    return {ok:false,msg:`Row count mismatch — expected ${exp.rows.length}, got ${got.rows.length}.`};
+  if(orderSensitive){
+    for(let i=0;i<exp.rows.length;i++)
+      if(rowKey(got.rows[i])!==rowKey(exp.rows[i]))
+        return {ok:false,msg:`Row ${i+1} differs (this problem is order-sensitive — check your ORDER BY).`};
+  }else{
+    const g=got.rows.map(rowKey).sort(), e=exp.rows.map(rowKey).sort();
+    for(let i=0;i<e.length;i++) if(g[i]!==e[i]) return {ok:false,msg:"Result set doesn't match (values differ)."};
+  }
+  return {ok:true,msg:"Result matches the verified answer."};
+}
+
+/* ---------- quant numeric check ---------- */
+function parseAns(raw){
+  if(raw==null) return NaN;
+  let s=String(raw).trim().replace(/%$/,"").replace(/[₹$,\s]/g,"");
+  if(/^[-+]?\d+\/\d+$/.test(s)){const[a,b]=s.split("/");return +a/+b;}
+  const n=Number(s); return isNaN(n)?NaN:n;
+}
+function checkQuant(prob,raw){
+  const got=parseAns(raw);
+  const accepts=[prob.answer,...(prob.accept||[]).map(parseAns)].filter(x=>!isNaN(x));
+  if(isNaN(got)) return {ok:false,msg:"Couldn't read a number — type a final value (decimal, fraction like 5/14, or %).",hard:true};
+  // percent leniency: 28 vs 0.28
+  const cands=accepts.flatMap(a=>[a, a*100, a/100]);
+  const ok=cands.some(a=>Math.abs(a-got)<=Math.max(prob.tol, Math.abs(a)*0.01)+1e-9);
+  return ok
+    ? {ok:true,msg:`Correct — ${got} matches the verified answer.`}
+    : {ok:false,msg:`Not quite. Your answer ${got} ≠ verified ${prob.answer}. Re-check the method, then ⌕ Evaluate for a diagnosis.`};
+}
+
+/* ---------- logging ---------- */
+function logTopic(tag,passed,slips){
+  const s=S.topics[tag]||(S.topics[tag]={att:0,pass:0,slip:0,scores:[]});
+  s.att++; if(passed)s.pass++; s.slip+=slips; s.scores.push(passed?1:0);
+}
+function logEval(prob,passed,tags){
+  const slips=tags.filter(t=>t!==prob.tag).length + (passed?0:1);
+  logTopic(prob.tag,passed,passed?0:1);
+  tags.forEach(t=>{ if(t!==prob.tag && S.topics[t]) S.topics[t].slip++; });
+  S.evalLog.push({ts:Date.now(),id:prob.id,cat:prob.category,tag:prob.tag,passed,tags});
+  if(passed) S.solved[prob.id]=true;
+  save();
+}
+function markSolved(prob,passed){
+  // SQL Run is a correctness signal; quant Run is NOT logged to profile (per spec)
+  if(prob.category==="sql"){ logTopic(prob.tag,passed,0); if(passed)S.solved[prob.id]=true; save(); }
+  else if(passed){ S.solved[prob.id]=true; save(); }
+}
+
+/* ---------- judge (silent /api/judge) ---------- */
+async function judge(prob,work){
+  const payload={
+    category:prob.category, tag:prob.tag, title:prob.title, statement:prob.statement,
+    dialectNote:prob.dialectNote||null,
+    expected: prob.category==="sql" ? {cols:prob.expected.cols,rows:prob.expected.rows.slice(0,8)} : {answer:prob.answer,accept:prob.accept},
+    playbook:prob.playbook, userWork:work, vocab:VOCAB
+  };
+  const r=await fetch("/api/judge",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+  if(!r.ok){ const t=await r.text().catch(()=>""); throw new Error(`judge ${r.status}: ${t.slice(0,140)}`); }
+  return r.json();
+}
+
+/* ---------- router ---------- */
+const views=["today","bank","problem","weak","trends","drill"];
+function show(v){
+  views.forEach(x=>$("#"+x).classList.toggle("active", x===v));
+  document.querySelectorAll("#nav button").forEach(b=>b.classList.toggle("active",b.dataset.v===v));
+  if(v==="today")renderToday(); if(v==="bank")renderBank();
+  if(v==="weak")renderWeak(); if(v==="trends")renderTrends(); if(v==="drill")renderDrill();
+  window.scrollTo(0,0);
+}
+document.querySelectorAll("#nav button").forEach(b=>b.onclick=()=>show(b.dataset.v));
+
+/* ---------- TODAY ---------- */
+function problemsForTag(tag,wantCat){
+  return BANK.filter(p=>p.tag===tag).concat(
+    wantCat?BANK.filter(p=>p.category===wantCat&&p.tag!==tag):[]);
+}
+function weakestUnsolvedTag(){
+  return [...ALLTAGS].sort((a,b)=>weaknessScore(b)-weaknessScore(a))
+    .find(t=>BANK.some(p=>p.tag===t&&!S.solved[p.id])) || null;
+}
+function renderToday(){
+  const root=$("#today"); root.innerHTML="";
+  const d=Math.min(S.day,30), [focusTag,focusLabel]=SPINE[d-1];
+  root.appendChild(el("div","eyebrow",`30-day forge · day ${d} of 30`));
+  const h=el("h1",null,esc(focusLabel)); root.appendChild(h);
+  root.appendChild(el("p","sub","Focus topic for today, with revision woven in from your weakest tags. Pacing adapts to your scores."));
+
+  const bar=el("div","daybar");
+  bar.appendChild(el("span","daychip",`Day ${d}`));
+  bar.appendChild(el("span","focus mono",focusTag));
+  const adv=el("button","ghost","Advance day ▸"); adv.onclick=()=>{S.day=Math.min(30,S.day+1);save();renderToday();};
+  const back=el("button","ghost","◂"); back.onclick=()=>{S.day=Math.max(1,S.day-1);save();renderToday();};
+  bar.appendChild(back); bar.appendChild(adv);
+  root.appendChild(bar);
+
+  // adaptive reinforce banner
+  const yd=S.dayScore[d-1];
+  if(yd!=null && yd<0.6){
+    root.appendChild(el("div","banner",`⚠ Yesterday's accuracy was ${Math.round(yd*100)}%. Reinforcement woven in: an extra ${SPINE[d-2][0]} drill below.`));
+  }
+
+  // focus problems (prefer unsolved) + 1 revision from weakest tag
+  const cat=focusTag.split(":")[0];
+  let focus=problemsForTag(focusTag,cat);
+  focus.sort((a,b)=>(S.solved[a.id]?1:0)-(S.solved[b.id]?1:0));
+  focus=focus.slice(0,3);
+  const wt=weakestUnsolvedTag();
+  const rev=wt&&!focus.some(p=>p.tag===wt)?BANK.find(p=>p.tag===wt&&!S.solved[p.id]):null;
+  const reinforce=(yd!=null&&yd<0.6)?BANK.find(p=>p.tag===SPINE[d-2][0]&&!focus.includes(p)):null;
+
+  const sec=(label,arr)=>{
+    if(!arr.length)return;
+    root.appendChild(el("div","eyebrow",label));
+    const list=el("div","plist");
+    arr.forEach(p=>list.appendChild(prow(p)));
+    root.appendChild(list);
+    root.appendChild(el("div","tiny","&nbsp;"));
+  };
+  sec("Focus",focus);
+  if(rev) sec("Revision · weakest tag",[rev]);
+  if(reinforce) sec("Reinforce · yesterday",[reinforce]);
+}
+function prow(p){
+  const r=el("div","prow");
+  r.appendChild(el("span","cat "+p.category,catLabel(p.category)));
+  r.appendChild(el("span","ttl",esc(p.title)));
+  r.appendChild(el("span","tag",p.tag));
+  r.appendChild(el("span","diff",p.difficulty));
+  if(S.solved[p.id]) r.appendChild(el("span","done","✓ solved"));
+  r.onclick=()=>openProblem(p.id);
+  return r;
+}
+
+/* ---------- BANK ---------- */
+function renderBank(){
+  const root=$("#bank"); root.innerHTML="";
+  root.appendChild(el("h1",null,"Problem bank"));
+  root.appendChild(el("p","sub",`${BANK.length} verified problems. SQL answers checked against real Postgres (PGlite); quant answers hand-verified.`));
+  ["sql","proba","stats","apt"].forEach(c=>{
+    root.appendChild(el("div","eyebrow",catLabel(c)));
+    const list=el("div","plist");
+    BANK.filter(p=>p.category===c).forEach(p=>list.appendChild(prow(p)));
+    root.appendChild(list); root.appendChild(el("div","tiny","&nbsp;"));
+  });
+}
+
+/* ---------- PROBLEM ---------- */
+let cm=null;
+function openProblem(id){
+  const p=byId[id]; const root=$("#problem"); root.innerHTML=""; cm=null;
+  show("problem"); // sets active
+  const back=el("button","pback","‹ back"); back.onclick=()=>show("today"); root.appendChild(back);
+
+  const head=el("div","phead");
+  head.appendChild(el("span","cat "+p.category,catLabel(p.category)));
+  head.appendChild(el("h1",null,esc(p.title)));
+  head.appendChild(el("span","diff mono",p.difficulty+" · "+p.tag));
+  root.appendChild(head);
+
+  root.appendChild(el("div","statement",md(p.statement)));
+
+  if(p.examples?.length){
+    const b=el("div","block"); b.appendChild(el("div","lbl","Examples"));
+    const ex=el("div","examples"); p.examples.forEach(e=>ex.appendChild(el("div",null,esc(e)))); b.appendChild(ex); root.appendChild(b);
+  }
+  if(p.constraints?.length){
+    const b=el("div","block"); b.appendChild(el("div","lbl","Constraints"));
+    const ex=el("div","constraints"); p.constraints.forEach(e=>ex.appendChild(el("div",null,esc(e)))); b.appendChild(ex); root.appendChild(b);
+  }
+
+  if(p.category==="sql"){
+    const b=el("div","block"); b.appendChild(el("div","lbl","Sample tables"));
+    const wrap=el("div","tables"); const tbls=parseTables(p.schema);
+    Object.entries(tbls).forEach(([name,t])=>{
+      const tb=el("table","db"); tb.innerHTML=`<caption>${esc(name)}</caption><thead><tr>${t.cols.map(c=>`<th>${esc(c)}</th>`).join("")}</tr></thead><tbody>${t.rows.map(r=>`<tr>${r.map(v=>`<td>${esc(v)}</td>`).join("")}</tr>`).join("")}</tbody>`;
+      wrap.appendChild(tb);
+    });
+    b.appendChild(wrap); root.appendChild(b);
+
+    const ew=el("div","editorwrap"); const ta=el("textarea"); ta.value=p.starter; ew.appendChild(ta); root.appendChild(ew);
+    cm=CodeMirror.fromTextArea(ta,{mode:"text/x-pgsql",theme:"material-darker",lineNumbers:true,lineWrapping:true});
+  }else{
+    const aw=el("div","answerwrap");
+    const sc=el("textarea","scratch"); sc.id="scratch"; sc.placeholder="Work it out here — English instinct first, then notation. Derive before you compute.";
+    aw.appendChild(sc);
+    const fr=el("div","finalrow");
+    fr.appendChild(el("label",null,"Final answer:"));
+    const inp=el("input"); inp.id="finalAns"; inp.placeholder="e.g. 5/14, 0.357, 16.7%"; fr.appendChild(inp);
+    aw.appendChild(fr); root.appendChild(aw);
+  }
+
+  const act=el("div","actions");
+  const runB=el("button","btn run",p.category==="sql"?"▶ Run":"▶ Check");
+  const evB=el("button","btn eval","⌕ Evaluate");
+  const tog=el("button","toggle","Show playbook ▾");
+  act.appendChild(runB); act.appendChild(evB); act.appendChild(tog);
+  root.appendChild(act);
+
+  const res=el("div","result"); res.id="result"; root.appendChild(res);
+
+  const pb=el("div","playbook");
+  const pbItem=(lbl,txt,cls="")=>{const d=el("div","pb "+cls);d.appendChild(el("div","lbl",lbl));d.appendChild(el("p",null,cls==="formula"?esc(txt):md(txt)));return d;};
+  pb.appendChild(pbItem("Intuition",p.playbook.intuition));
+  pb.appendChild(pbItem("Formula",p.playbook.formula,"formula"));
+  pb.appendChild(pbItem("Pitfalls",p.playbook.pitfalls));
+  if(p.dialectNote){const d=el("div","pb");d.appendChild(el("div","lbl","Dialect note · Postgres ⇄ MySQL"));d.appendChild(el("p","dialect",md(p.dialectNote)));pb.appendChild(d);}
+  root.appendChild(pb);
+  tog.onclick=()=>{pb.classList.toggle("open");tog.textContent=pb.classList.contains("open")?"Hide playbook ▴":"Show playbook ▾";};
+
+  runB.onclick=()=>doRun(p,runB,res);
+  evB.onclick=()=>doEval(p,evB,res);
+}
+
+function verdictBox(cls,msg,tags){
+  const v=el("div","verdict "+cls,esc(msg));
+  if(tags&&tags.length){const tr=el("div","tagrow");tags.forEach(t=>tr.appendChild(el("span","tagpill",t)));v.appendChild(tr);}
+  return v;
+}
+async function doRun(p,btn,res){
+  res.innerHTML=""; btn.disabled=true; const old=btn.textContent;
+  if(p.category==="sql"){
+    btn.textContent="running…";
+    try{
+      const got=await runProblemSql(p,cm.getValue());
+      const tbl=el("div","restable");
+      tbl.innerHTML=`<table><thead><tr>${got.cols.map(c=>`<th>${esc(c)}</th>`).join("")}</tr></thead><tbody>${got.rows.slice(0,50).map(r=>`<tr>${r.map(v=>`<td>${esc(v==null?"NULL":v)}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+      res.appendChild(tbl);
+      const d=diffResult(got,p.expected,p.orderSensitive);
+      res.appendChild(verdictBox(d.ok?"pass":"fail",(d.ok?"✓ ":"✗ ")+d.msg));
+      markSolved(p,d.ok);
+      recordDayScore(p.id,d.ok);
+    }catch(e){
+      res.appendChild(verdictBox("err","Postgres error · "+e.message));
+    }
+  }else{
+    const raw=$("#finalAns").value;
+    const c=checkQuant(p,raw);
+    res.appendChild(verdictBox(c.ok?"pass":(c.hard?"err":"fail"),(c.ok?"✓ ":"✗ ")+c.msg));
+    markSolved(p,c.ok);            // quant correctness not logged to topic stats (per spec)
+    recordDayScore(p.id,c.ok);
+  }
+  btn.disabled=false; btn.textContent=old;
+}
+async function doEval(p,btn,res){
+  res.innerHTML=""; btn.disabled=true; const old=btn.textContent; btn.textContent="evaluating…";
+  const work = p.category==="sql" ? cm.getValue() : (($("#scratch").value||"")+"\n\nFINAL: "+($("#finalAns").value||""));
+  try{
+    const j=await judge(p,work);
+    const passed=!!j.correct;
+    const tags=(j.tags||[]).filter(t=>ALLTAGS.includes(t));
+    res.appendChild(verdictBox(passed?"pass":"fail",
+      `${passed?"✓":"✗"} ${j.verdict||""}\n\nHint: ${j.hint||"—"}`, tags));
+    logEval(p,passed,tags.length?tags:(passed?[p.tag]:[p.tag]));
+    recordDayScore(p.id,passed);
+  }catch(e){
+    res.appendChild(verdictBox("info",
+      "Judge unavailable (running locally without /api/judge, or ANTHROPIC_API_KEY not set). Run still works offline.\n\n"+e.message));
+  }
+  btn.disabled=false; btn.textContent=old;
+}
+function recordDayScore(id,ok){
+  const d=Math.min(S.day,30); const k="d"+d;
+  const cur=S.dayScore[d]; // running avg over attempts today
+  const arr=S._dayArr||(S._dayArr={}); arr[d]=arr[d]||[]; arr[d].push(ok?1:0);
+  S.dayScore[d]=arr[d].reduce((a,b)=>a+b,0)/arr[d].length; save();
+}
+
+/* ---------- WEAK POINTS ---------- */
+function renderWeak(){
+  const root=$("#weak"); root.innerHTML="";
+  root.appendChild(el("h1",null,"Weak points"));
+  root.appendChild(el("p","sub","Proficiency per topic from score + slip frequency. Seeded with your documented baseline pitfalls until real attempts arrive."));
+
+  const totAtt=Object.values(S.topics).reduce((a,t)=>a+t.att,0);
+  root.appendChild(el("div","statline",
+    `Logged attempts <b>${totAtt}</b> · Solved <b>${Object.keys(S.solved).length}</b>/${BANK.length} · Eval entries <b>${S.evalLog.length}</b> · Curriculum day <b>${S.day}</b>/30`));
+
+  // ranked weaknesses
+  root.appendChild(el("div","eyebrow","Top weaknesses"));
+  const ranked=[...ALLTAGS].map(t=>({t,w:weaknessScore(t),att:S.topics[t]?.att||0,base:!!S.topics[t]?.baseline}))
+    .sort((a,b)=>b.w-a.w).slice(0,7);
+  const rl=el("div","ranklist");
+  ranked.forEach((r,i)=>{
+    const has=BANK.some(p=>p.tag===r.t&&!S.solved[p.id]);
+    const row=el("div","rankrow");
+    row.appendChild(el("span","n",(i+1)+""));
+    row.appendChild(el("span","t",r.t+(r.att===0&&r.base?"  · baseline pitfall":r.att===0?"  · untested":"")));
+    row.appendChild(el("span","tiny",LEVELS[levelOf(r.t)]));
+    if(has){const d=el("button","drill","drill ▸");d.onclick=()=>{const p=BANK.find(x=>x.tag===r.t&&!S.solved[x.id]);openProblem(p.id);};row.appendChild(d);}
+    rl.appendChild(row);
+  });
+  root.appendChild(rl);
+  root.appendChild(el("div","tiny","&nbsp;"));
+
+  // full level grid by category
+  ["sql","proba","stats","apt"].forEach(c=>{
+    root.appendChild(el("div","eyebrow",catLabel(c)+" proficiency"));
+    const g=el("div","levelgrid");
+    VOCAB[c].forEach(name=>{
+      const t=c+":"+name; const lv=levelOf(t); const s=S.topics[t];
+      const card=el("div","lvl");
+      const top=el("div","top");
+      top.appendChild(el("span","tg",t));
+      const badge=el("span","badge",LEVELS[lv]); badge.style.color=HEAT[lv]; badge.style.border="1px solid "+HEAT[lv]; badge.style.background=HEAT[lv]+"18";
+      top.appendChild(badge); card.appendChild(top);
+      const hb=el("div","heatbar"); const i=el("i"); i.style.width=Math.round(lv/6*100)+"%";
+      i.style.background=`linear-gradient(90deg,${HEAT[1]},${HEAT[lv]})`; hb.appendChild(i); card.appendChild(hb);
+      card.appendChild(el("div","meta",`att ${s.att} · pass ${s.pass} · slips ${s.slip}${s.baseline?" · seeded":""}`));
+      g.appendChild(card);
+    });
+    root.appendChild(g); root.appendChild(el("div","tiny","&nbsp;"));
+  });
+}
+
+/* ---------- TRENDS ---------- */
+function renderTrends(){
+  const root=$("#trends"); root.innerHTML="";
+  root.appendChild(el("h1",null,"Trends"));
+  root.appendChild(el("p","sub","Accuracy over time and per-category slip rate, early vs recent, from your Evaluate log."));
+  if(S.evalLog.length<2){ root.appendChild(el("div","empty","Not enough data yet. Use ⌕ Evaluate on a few problems to populate trends.")); return; }
+
+  // accuracy sparkline (rolling pass rate)
+  const log=S.evalLog;
+  let cum=0; const pts=log.map((e,i)=>{cum+=e.passed?1:0;return cum/(i+1);});
+  const W=720,H=90,pad=6;
+  const x=i=>pad+i*((W-2*pad)/Math.max(1,pts.length-1));
+  const y=v=>H-pad-v*(H-2*pad);
+  const path=pts.map((v,i)=>(i?"L":"M")+x(i).toFixed(1)+" "+y(v).toFixed(1)).join(" ");
+  const card=el("div","card");
+  card.appendChild(el("div","eyebrow","Accuracy (rolling)"));
+  card.innerHTML+=`<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+    <line x1="${pad}" y1="${y(0.5)}" x2="${W-pad}" y2="${y(0.5)}" stroke="#2a3547" stroke-dasharray="3 4"/>
+    <path d="${path}" fill="none" stroke="var(--cyan)" stroke-width="2"/>
+    ${pts.map((v,i)=>`<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="2.4" fill="${v>=0.5?'var(--good)':'var(--bad)'}"/>`).join("")}
+  </svg><div class="tiny">latest rolling accuracy: ${Math.round(pts[pts.length-1]*100)}% over ${pts.length} evaluations · dashed line = 50%</div>`;
+  root.appendChild(card);
+  root.appendChild(el("div","tiny","&nbsp;"));
+
+  // per-category slip rate early vs recent
+  root.appendChild(el("div","eyebrow","Slip rate · early vs recent"));
+  const wrap=el("div","card");
+  ["sql","proba","stats","apt"].forEach(c=>{
+    const entries=log.filter(e=>e.cat===c);
+    const row=el("div","sliprow"); row.appendChild(el("span","c",c));
+    if(entries.length<2){ row.appendChild(el("span","tiny","need ≥2 evals")); wrap.appendChild(row); return; }
+    const half=Math.floor(entries.length/2);
+    const slip=arr=>arr.length?arr.filter(e=>!e.passed).length/arr.length:0;
+    const early=slip(entries.slice(0,half)), recent=slip(entries.slice(half));
+    const dir=recent<early-0.05?["down","↓ improving"]:recent>early+0.05?["up","↑ rising"]:["flat","→ flat"];
+    const bars=el("div","bars");
+    bars.innerHTML=`<span class="tiny">early ${Math.round(early*100)}%</span>
+      <span class="tiny">→</span><span class="tiny">recent ${Math.round(recent*100)}%</span>
+      <span class="arrow ${dir[0]}">${dir[1]}</span>`;
+    row.appendChild(bars); wrap.appendChild(row);
+  });
+  root.appendChild(wrap);
+}
+
+/* ---------- DRILL ---------- */
+function renderDrill(){
+  const root=$("#drill"); root.innerHTML="";
+  root.appendChild(el("h1",null,"Drill my weak spots"));
+  const t=weakestUnsolvedTag();
+  if(!t){ root.appendChild(el("p","sub","Everything's solved. Reset progress or advance the curriculum for fresh problems.")); return; }
+  const p=BANK.find(x=>x.tag===t&&!S.solved[x.id]);
+  root.appendChild(el("p","sub",`Your weakest tag with an unsolved problem is `));
+  const chip=el("div","daybar"); chip.appendChild(el("span","daychip",t)); chip.appendChild(el("span","tiny",LEVELS[levelOf(t)]));
+  root.appendChild(chip);
+  const list=el("div","plist"); list.appendChild(prow(p)); root.appendChild(list);
+  const go=el("button","btn run","Jump in ▸"); go.style.marginTop="14px"; go.onclick=()=>openProblem(p.id); root.appendChild(go);
+}
+
+/* ---------- export / import ---------- */
+$("#expBtn").onclick=()=>{
+  const blob=new Blob([JSON.stringify(S,null,1)],{type:"application/json"});
+  const a=el("a"); a.href=URL.createObjectURL(blob); a.download="quant-forge-profile.json"; a.click();
+};
+$("#impBtn").onclick=()=>$("#impFile").click();
+$("#impFile").onchange=e=>{
+  const f=e.target.files[0]; if(!f)return; const rd=new FileReader();
+  rd.onload=()=>{ try{const j=JSON.parse(rd.result); if(j.topics){S=j;save();show("weak");}else alert("Not a valid profile file.");}catch(err){alert("Could not parse JSON.");} };
+  rd.readAsText(f);
+};
+
+/* ---------- boot ---------- */
+renderToday();
+</script>
+</body>
+</html>
