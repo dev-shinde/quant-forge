@@ -117,6 +117,20 @@ table.db td{color:var(--text)}
   border-radius:9px;padding:7px 13px;font-size:12px}
 .toggle:hover{color:var(--amber);border-color:var(--amber)}
 
+.running{margin-top:12px;border:1px solid var(--line2);border-radius:12px;padding:12px 15px;background:var(--panel2);
+  animation:fade .2s ease}
+.running .rtop{display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--text)}
+.spinner{width:15px;height:15px;border-radius:50%;border:2px solid var(--line2);border-top-color:var(--cyan);
+  flex:none;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.rbar{margin-top:10px;height:5px;border-radius:99px;background:var(--line);overflow:hidden;position:relative}
+.rbar::after{content:"";position:absolute;left:-40%;top:0;height:100%;width:40%;border-radius:99px;
+  background:linear-gradient(90deg,transparent,var(--cyan),var(--violet),transparent);animation:slide 1.15s ease-in-out infinite}
+@keyframes slide{0%{left:-40%}100%{left:100%}}
+.rsub{margin-top:7px;font-size:11.5px;color:var(--muted);font-family:var(--mono)}
+.btn.run.busy{position:relative;color:transparent}
+.btn.run.busy::after{content:"";position:absolute;inset:0;margin:auto;width:14px;height:14px;border-radius:50%;
+  border:2px solid rgba(6,32,29,.35);border-top-color:#06201d;animation:spin .7s linear infinite}
 .result{margin-top:14px}
 .verdict{border-radius:12px;padding:12px 15px;font-size:14px;border:1px solid;margin-top:12px;white-space:pre-wrap}
 .verdict.pass{border-color:var(--good);background:rgba(52,211,153,.07);color:#a7f3d0}
@@ -168,6 +182,47 @@ table.db td{color:var(--text)}
 .statline b{color:var(--cyan)}
 .legend{font-family:var(--mono);font-size:10.5px;color:var(--faint);display:flex;gap:14px;flex-wrap:wrap;margin-top:8px}
 .dot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:middle}
+
+/* ---- Mastery constellation ---- */
+.mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.mcell{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px 15px 17px;overflow:hidden}
+.mcell.fresh{opacity:.62}
+.mfill{position:absolute;left:0;bottom:0;height:3px;border-radius:0 3px 3px 0;transition:width .5s ease}
+.mname{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;color:var(--text)}
+.mname i{width:9px;height:9px;border-radius:50%;display:block;flex:none;box-shadow:0 0 8px 0 currentColor}
+.mscore{font-size:30px;font-weight:700;line-height:1.1;margin-top:8px;font-family:var(--mono)}
+.mscore span{font-size:14px;opacity:.6;margin-left:1px}
+.mcount{font-size:11.5px;color:var(--muted);font-family:var(--mono);margin-top:1px}
+.mnarr{font-size:12px;color:var(--faint);margin-top:9px;line-height:1.4;min-height:32px}
+.mdiff{display:flex;gap:5px;margin-top:9px}
+.mdiff span{font-family:var(--mono);font-size:10px;color:var(--muted);border:1px solid var(--line2);border-radius:5px;padding:1px 6px}
+.mcell .drill{position:absolute;top:12px;right:12px;background:transparent;border:1px solid var(--line2);color:var(--muted);
+  border-radius:7px;padding:3px 9px;font-size:11px;font-family:var(--mono);cursor:pointer}
+.mcell .drill:hover{color:var(--cyan);border-color:var(--cyan)}
+
+/* ---- SQL command fluency ---- */
+.cmdwrap{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:10px}
+.cmdchip{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:12px 13px;cursor:pointer;transition:border-color .15s}
+.cmdchip:hover{border-color:var(--cyan)}
+.cmdtop{display:flex;align-items:center;gap:8px}
+.cmdtop i{width:8px;height:8px;border-radius:50%;display:block;flex:none}
+.cmdname{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--text)}
+.cmdstat{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--muted)}
+.cmdbar{height:4px;border-radius:99px;background:var(--line);overflow:hidden;margin:9px 0 7px}
+.cmdbar i{display:block;height:100%;border-radius:99px;transition:width .5s ease}
+.cmdblurb{font-size:11.5px;color:var(--faint);line-height:1.42}
+.cmdlegend{font-family:var(--mono);font-size:10.5px;color:var(--faint);display:flex;gap:16px;flex-wrap:wrap;margin:2px 0 14px}
+.cmdlegend i{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle}
+
+/* ---- approach hint on wrong runs ---- */
+.approach{border:1px solid var(--line2);background:var(--panel2);border-left:3px solid var(--violet);
+  border-radius:8px;padding:10px 13px;margin-top:10px;font-size:13px;color:var(--text);line-height:1.5}
+.approach b{color:var(--violet);font-family:var(--mono);font-size:11px;letter-spacing:.5px;text-transform:uppercase;display:block;margin-bottom:3px}
+.cmdused{font-family:var(--mono);font-size:11.5px;margin-top:9px;line-height:1.6}
+.cmdused .ok{color:var(--good)} .cmdused .miss{color:var(--amber)}
+.trainrow{font-family:var(--mono);font-size:11px;color:var(--muted);margin:6px 0 2px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.trainrow b{color:var(--faint);font-weight:400}
+.trainrow span{border:1px solid var(--line2);border-radius:5px;padding:1px 7px;color:var(--cyan)}
 </style>
 </head>
 <body>
@@ -176,6 +231,7 @@ table.db td{color:var(--text)}
   <nav id="nav">
     <button data-v="today" class="active">Today</button>
     <button data-v="bank">Bank</button>
+    <button data-v="mastery">⬡ Mastery</button>
     <button data-v="weak">Weak points</button>
     <button data-v="trends">Trends</button>
     <button data-v="drill">⌖ Drill</button>
@@ -189,6 +245,7 @@ table.db td{color:var(--text)}
 <main>
   <section id="today" class="view active"></section>
   <section id="bank" class="view"></section>
+  <section id="mastery" class="view"></section>
   <section id="problem" class="view"></section>
   <section id="weak" class="view"></section>
   <section id="trends" class="view"></section>
@@ -198,7 +255,7 @@ table.db td{color:var(--text)}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/sql/sql.min.js"></script>
 <script type="module">
-import { PGlite } from "https://cdn.jsdelivr.net/npm/@electric-sql/pglite/dist/index.js";
+import { PGlite } from "https://cdn.jsdelivr.net/npm/@electric-sql/pglite@0.5.3/dist/index.js";
 
 /* ---------- data ---------- */
 const BANK = [
@@ -1033,10 +1090,18 @@ function freshState(){
   const topics={};
   ALLTAGS.forEach(t=>topics[t]={att:0,pass:0,slip:0,scores:[]});
   BASELINE.forEach(t=>{ if(topics[t]) topics[t].baseline=1; });
-  return {day:1,solved:{},evalLog:[],topics,dayScore:{}};
+  return {day:1,solved:{},evalLog:[],topics,dayScore:{},cmds:{}};
 }
 let S = load();
-function load(){ try{const r=JSON.parse(localStorage.getItem(LS)); if(r&&r.topics) return r;}catch(e){} return freshState(); }
+function load(){
+  let r=null;
+  try{ r=JSON.parse(localStorage.getItem(LS)); }catch(e){}
+  if(!r||!r.topics) return freshState();
+  // backfill fields added in later versions so old progress is preserved
+  if(!r.cmds) r.cmds={};
+  ALLTAGS.forEach(t=>{ if(!r.topics[t]) r.topics[t]={att:0,pass:0,slip:0,scores:[]}; });
+  return r;
+}
 function save(){ localStorage.setItem(LS,JSON.stringify(S)); }
 
 /* ---------- proficiency levels ---------- */
@@ -1057,6 +1122,123 @@ function weaknessScore(t){
   if(s.att===0) return s.baseline?55:35;           // untested baseline ranks above untested-unseen
   const passRate=s.pass/s.att, slipRate=s.slip/Math.max(s.att,1);
   return Math.round((1-passRate)*70 + slipRate*60 + (s.baseline?8:0));
+}
+
+/* ---------- category colours (constellation) ---------- */
+const CATCOLOR={sql:"#34e0d2",proba:"#a78bfa",stats:"#34d399",apt:"#fbbf24"};
+
+/* ---------- mastery % + narrative per topic ---------- */
+function masteryPct(t){
+  const s=S.topics[t]||{att:0,pass:0,slip:0};
+  if(s.att===0) return 0;
+  const passRate=s.pass/s.att, slipRate=s.slip/Math.max(s.att,1);
+  return Math.round(Math.max(0,Math.min(100,passRate*100 - slipRate*15 - (s.baseline?5:0))));
+}
+function narrativeFor(t){
+  const s=S.topics[t]||{att:0}, pct=masteryPct(t);
+  if(s.att===0) return s.baseline?"Flagged from your baseline pitfalls — not drilled yet.":"Not started — fresh territory.";
+  if(pct<25) return "Very shaky — the approach or setup is still slipping.";
+  if(pct<50) return "Building the basics — keep the reps coming.";
+  if(pct<72) return "Logic lands; execution still wobbles under pressure.";
+  if(pct<88) return "Solid — now sharpening edge cases and speed.";
+  return "Fluent — interview-ready on this topic.";
+}
+function statusColor(t){
+  const s=S.topics[t]||{att:0}, pct=masteryPct(t);
+  if(s.att===0) return "#5d6678";      // grey  · fresh
+  if(pct<50) return "#f87171";          // rose  · needs work
+  if(pct<75) return "#fbbf24";          // amber · close
+  return "#34d399";                     // green · solid
+}
+function solvedOf(tag){ return BANK.filter(p=>p.tag===tag&&S.solved[p.id]).length; }
+function totalOf(tag){ return BANK.filter(p=>p.tag===tag).length; }
+function diffSpread(tag){
+  const d={Easy:0,Medium:0,Hard:0};
+  BANK.filter(p=>p.tag===tag).forEach(p=>{d[p.difficulty]=(d[p.difficulty]||0)+1;});
+  return d;
+}
+
+/* ---------- SQL command fluency ---------- */
+/* name, detection regex (on cleaned upper-case SQL), one-line beginner blurb */
+const SQLCMDS=[
+  ["COALESCE",   /\bCOALESCE\s*\(/,        "First non-NULL value — your go-to for turning NULLs into a default like 0."],
+  ["NULLIF",     /\bNULLIF\s*\(/,          "Returns NULL when two values are equal — handy to dodge divide-by-zero."],
+  ["CASE",       /\bCASE\b/,               "Inline if/else inside SQL — bucket or relabel rows on the fly."],
+  ["GROUP BY",   /\bGROUP\s+BY\b/,         "Collapses rows into groups so you can aggregate per group."],
+  ["HAVING",     /\bHAVING\b/,             "Filters AFTER grouping — conditions on aggregates that WHERE can't see."],
+  ["JOIN",       /\bJOIN\b/,               "Combines rows from two tables on a matching key."],
+  ["LEFT JOIN",  /\bLEFT\s+(OUTER\s+)?JOIN\b/, "Keeps every left-side row even with no match — pair with COALESCE for zeros."],
+  ["NOT EXISTS", /\bNOT\s+EXISTS\b/,       "The NULL-safe way to ask 'rows with no match over there' (anti-join)."],
+  ["EXISTS",     /\bEXISTS\b/,             "True if a correlated subquery returns any row — a semi-join."],
+  ["NOT IN",     /\bNOT\s+IN\b/,           "Set-exclusion test — but a NULL in the list silently breaks it. Know the trap."],
+  ["EXCEPT",     /\bEXCEPT\b/,             "Set difference — rows in A that aren't in B."],
+  ["INTERSECT",  /\bINTERSECT\b/,          "Set intersection — rows common to both queries."],
+  ["UNION",      /\bUNION\b/,              "Stacks two result sets (UNION dedups, UNION ALL keeps duplicates)."],
+  ["WITH (CTE)", /\bWITH\b/,               "Names a subquery up front so the query reads top-to-bottom."],
+  ["RECURSIVE",  /\bRECURSIVE\b/,          "A CTE that calls itself — walk hierarchies and graphs (org charts, trees)."],
+  ["ROW_NUMBER", /\bROW_NUMBER\s*\(/,      "Numbers rows 1,2,3… within a partition — the dedup / latest-per-key workhorse."],
+  ["RANK",       /\bRANK\s*\(/,            "Ranking that leaves gaps after ties (1,1,3)."],
+  ["DENSE_RANK", /\bDENSE_RANK\s*\(/,      "Ranking with no gaps after ties (1,1,2) — top-N-per-group."],
+  ["LAG",        /\bLAG\s*\(/,             "Peeks at the previous row's value — month-over-month deltas."],
+  ["LEAD",       /\bLEAD\s*\(/,            "Peeks at the next row's value."],
+  ["OVER",       /\bOVER\s*\(/,            "Turns an aggregate into a window — compute without collapsing rows."],
+  ["PARTITION BY",/\bPARTITION\s+BY\b/,    "Restarts a window per group — 'per user', 'per dept'."],
+  ["ORDER BY",   /\bORDER\s+BY\b/,         "Sorts the output (and defines window order)."],
+  ["DISTINCT",   /\bDISTINCT\b/,           "Removes duplicate rows."],
+  ["COUNT",      /\bCOUNT\s*\(/,           "Counts rows (COUNT(*)) or non-NULL values."],
+  ["SUM",        /\bSUM\s*\(/,             "Adds up a numeric column across a group."],
+  ["AVG",        /\bAVG\s*\(/,             "Averages a numeric column across a group."],
+  ["ROUND",      /\bROUND\s*\(/,           "Rounds a number — watch PG numeric vs MySQL number return types."]
+];
+/* which commands a correct solution to each problem exercises */
+const CMDTARGETS={
+  "sql-01":["GROUP BY","HAVING","AVG","COUNT","ROUND","ORDER BY"],
+  "sql-02":["NOT EXISTS","NOT IN","LEFT JOIN"],
+  "sql-03":["DENSE_RANK","OVER","PARTITION BY","WITH (CTE)"],
+  "sql-04":["SUM","OVER","LAG","ORDER BY","WITH (CTE)"],
+  "sql-05":["DISTINCT","DENSE_RANK","OVER"],
+  "sql-06":["EXCEPT"],
+  "sql-07":["ROW_NUMBER","OVER","PARTITION BY","ORDER BY","WITH (CTE)"],
+  "sql-08":["ROW_NUMBER","OVER","PARTITION BY","GROUP BY","COUNT","WITH (CTE)"],
+  "sql-09":["LEFT JOIN","COALESCE","SUM","GROUP BY","ORDER BY"],
+  "sql-10":["WITH (CTE)","RECURSIVE"]
+};
+function cleanSql(q){
+  return String(q||"")
+    .replace(/--[^\n]*/g,"")            // line comments
+    .replace(/\/\*[\s\S]*?\*\//g,"")    // block comments
+    .replace(/'[^']*'/g,"''")           // string literals
+    .toUpperCase();
+}
+function detectCmds(q){
+  const s=cleanSql(q);
+  return SQLCMDS.filter(([n,re])=>re.test(s)).map(([n])=>n);
+}
+function cmdState(n){ return S.cmds[n]||(S.cmds[n]={seen:0,used:0,correct:0}); }
+/* log a SQL attempt: credit commands used, and count exposure for the problem's targets */
+function logCmds(prob,query,passed){
+  const used=detectCmds(query);
+  used.forEach(n=>{ const c=cmdState(n); c.used++; if(passed)c.correct++; });
+  (CMDTARGETS[prob.id]||[]).forEach(n=>{ cmdState(n).seen++; });
+  save();
+  return used;
+}
+function cmdFluency(n){
+  const c=S.cmds[n]||{used:0,correct:0};
+  if(c.correct<=0) return 0;
+  return Math.min(100, c.correct*40);   // 1 clean use =40%, 2 =80%, 3+ =100%
+}
+function cmdColor(n){
+  const c=S.cmds[n]||{used:0,correct:0};
+  if(c.correct>=3) return "#34d399";
+  if(c.correct>=1) return "#fbbf24";
+  if(c.used>0)     return "#f87171";   // tried but never landed it
+  return "#5d6678";                     // untouched
+}
+function firstProblemUsing(cmd){
+  const id=Object.keys(CMDTARGETS).find(id=>CMDTARGETS[id].includes(cmd) && !S.solved[id])
+        || Object.keys(CMDTARGETS).find(id=>CMDTARGETS[id].includes(cmd));
+  return id||null;
 }
 
 /* ---------- helpers ---------- */
@@ -1086,10 +1268,16 @@ function parseTables(schema){
 }
 
 /* ---------- PGlite ---------- */
-let pg=null, pgReady=null;
+let pg=null, pgReady=null, pgBooting=false;
+function warmPg(){ getPg().catch(()=>{}); } // fire-and-forget preload
 async function getPg(){
   if(pg) return pg;
-  if(!pgReady) pgReady=PGlite.create().then(db=>{pg=db;return db;});
+  if(!pgReady){
+    pgBooting=true;
+    pgReady=PGlite.create()
+      .then(db=>{pg=db;pgBooting=false;return db;})
+      .catch(e=>{pgReady=null;pgBooting=false;throw new Error("engine-boot: "+(e&&e.message||e));});
+  }
   return pgReady;
 }
 async function runProblemSql(prob,query){
@@ -1175,11 +1363,11 @@ async function judge(prob,work){
 }
 
 /* ---------- router ---------- */
-const views=["today","bank","problem","weak","trends","drill"];
+const views=["today","bank","mastery","problem","weak","trends","drill"];
 function show(v){
   views.forEach(x=>$("#"+x).classList.toggle("active", x===v));
   document.querySelectorAll("#nav button").forEach(b=>b.classList.toggle("active",b.dataset.v===v));
-  if(v==="today")renderToday(); if(v==="bank")renderBank();
+  if(v==="today")renderToday(); if(v==="bank")renderBank(); if(v==="mastery")renderMastery();
   if(v==="weak")renderWeak(); if(v==="trends")renderTrends(); if(v==="drill")renderDrill();
   window.scrollTo(0,0);
 }
@@ -1293,8 +1481,16 @@ function openProblem(id){
     });
     b.appendChild(wrap); root.appendChild(b);
 
+    if(CMDTARGETS[p.id]&&CMDTARGETS[p.id].length){
+      const tr=el("div","trainrow");
+      tr.appendChild(el("b",null,"Commands this drills:"));
+      CMDTARGETS[p.id].forEach(cmd=>tr.appendChild(el("span",null,esc(cmd))));
+      root.appendChild(tr);
+    }
+
     const ew=el("div","editorwrap"); const ta=el("textarea"); ta.value=p.starter; ew.appendChild(ta); root.appendChild(ew);
     cm=CodeMirror.fromTextArea(ta,{mode:"text/x-pgsql",theme:"material-darker",lineNumbers:true,lineWrapping:true});
+    warmPg(); // start downloading/booting the engine while the user reads
   }else{
     const aw=el("div","answerwrap");
     const sc=el("textarea","scratch"); sc.id="scratch"; sc.placeholder="Work it out here — English instinct first, then notation. Derive before you compute.";
@@ -1332,26 +1528,88 @@ function verdictBox(cls,msg,tags){
   if(tags&&tags.length){const tr=el("div","tagrow");tags.forEach(t=>tr.appendChild(el("span","tagpill",t)));v.appendChild(tr);}
   return v;
 }
+function runningBox(label,sub){
+  const box=el("div","running");
+  const top=el("div","rtop");
+  const sp=el("div","spinner"); top.appendChild(sp);
+  const lab=el("span",null,label); top.appendChild(lab);
+  box.appendChild(top);
+  box.appendChild(el("div","rbar"));
+  const s=el("div","rsub",sub||""); box.appendChild(s);
+  return {box, setLabel:t=>lab.textContent=t, setSub:t=>s.textContent=t};
+}
+function approachBox(p){
+  const intuition=(p.playbook&&p.playbook.intuition)||"";
+  const firstStep=intuition.split(/(?<=[.!?])\s+/)[0]||intuition;
+  const b=el("div","approach");
+  b.appendChild(el("b",null,"Approach"));
+  b.appendChild(el("span",null,esc(firstStep)+"  Open the playbook below for the full method — then re-run, or ⌕ Evaluate for a diagnosis of your reasoning."));
+  return b;
+}
+function cmdFeedback(p,used){
+  const targets=CMDTARGETS[p.id]||[];
+  if(!targets.length) return el("div","tiny","&nbsp;");
+  const usedSet=new Set(used);
+  const box=el("div","cmdused");
+  const got=targets.filter(t=>usedSet.has(t)), miss=targets.filter(t=>!usedSet.has(t));
+  let html="";
+  if(got.length) html+=`<span class="ok">✓ used: ${got.map(esc).join(", ")}</span><br>`;
+  if(miss.length) html+=`<span class="miss">◦ this one also drills: ${miss.map(esc).join(", ")}</span>`;
+  box.innerHTML=html||'<span class="miss">This problem drills: '+targets.map(esc).join(", ")+'</span>';
+  return box;
+}
+function cmdCredit(p,used){
+  const targets=new Set(CMDTARGETS[p.id]||[]);
+  const landed=used.filter(u=>targets.has(u));
+  if(!landed.length) return el("div","tiny","&nbsp;");
+  const box=el("div","cmdused");
+  box.innerHTML=`<span class="ok">✓ command fluency logged: ${landed.map(esc).join(", ")}</span> — check ⬡ Mastery to see it climb.`;
+  return box;
+}
 async function doRun(p,btn,res){
   res.innerHTML=""; btn.disabled=true; const old=btn.textContent;
   if(p.category==="sql"){
-    btn.textContent="running…";
+    btn.classList.add("busy");
+    const needsBoot = !pg;
+    const r=runningBox(
+      needsBoot ? "Booting the Postgres engine…" : "Running your query…",
+      needsBoot ? "First run downloads the PGlite WASM (~3 MB). This happens once per session." : "Executing against real Postgres in your browser."
+    );
+    res.appendChild(r.box);
     try{
+      if(needsBoot){ await getPg(); r.setLabel("Running your query…"); r.setSub("Engine ready. Executing against real Postgres in your browser."); }
       const got=await runProblemSql(p,cm.getValue());
+      res.innerHTML="";
       const tbl=el("div","restable");
       tbl.innerHTML=`<table><thead><tr>${got.cols.map(c=>`<th>${esc(c)}</th>`).join("")}</tr></thead><tbody>${got.rows.slice(0,50).map(r=>`<tr>${r.map(v=>`<td>${esc(v==null?"NULL":v)}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
       res.appendChild(tbl);
       const d=diffResult(got,p.expected,p.orderSensitive);
       res.appendChild(verdictBox(d.ok?"pass":"fail",(d.ok?"✓ ":"✗ ")+d.msg));
+      const used=logCmds(p,cm.getValue(),d.ok);      // track SQL command fluency
+      if(!d.ok){
+        res.appendChild(approachBox(p));              // hint of approach even when wrong
+        res.appendChild(cmdFeedback(p,used));         // which commands you used vs the ones this drills
+      }else{
+        res.appendChild(cmdCredit(p,used));           // celebrate the commands you just landed
+      }
       markSolved(p,d.ok);
       recordDayScore(p.id,d.ok);
     }catch(e){
-      res.appendChild(verdictBox("err","Postgres error · "+e.message));
+      res.innerHTML="";
+      const msg=String(e&&e.message||e);
+      if(msg.startsWith("engine-boot")){
+        res.appendChild(verdictBox("err",
+          "✗ Couldn't start the SQL engine. This is usually a network/CDN block on the PGlite WASM download — check that jsdelivr.net is reachable and that you're not opening the file via file:// (use the deployed site or `vercel dev`).\n\n"+msg));
+      }else{
+        res.appendChild(verdictBox("err","Postgres error · "+msg));
+      }
     }
+    btn.classList.remove("busy");
   }else{
     const raw=$("#finalAns").value;
     const c=checkQuant(p,raw);
     res.appendChild(verdictBox(c.ok?"pass":(c.hard?"err":"fail"),(c.ok?"✓ ":"✗ ")+c.msg));
+    if(!c.ok && !c.hard) res.appendChild(approachBox(p));
     markSolved(p,c.ok);            // quant correctness not logged to topic stats (per spec)
     recordDayScore(p.id,c.ok);
   }
@@ -1379,6 +1637,89 @@ function recordDayScore(id,ok){
   const cur=S.dayScore[d]; // running avg over attempts today
   const arr=S._dayArr||(S._dayArr={}); arr[d]=arr[d]||[]; arr[d].push(ok?1:0);
   S.dayScore[d]=arr[d].reduce((a,b)=>a+b,0)/arr[d].length; save();
+}
+
+/* ---------- MASTERY CONSTELLATION ---------- */
+function renderMastery(){
+  const root=$("#mastery"); root.innerHTML="";
+  root.appendChild(el("h1",null,"Mastery constellation"));
+  root.appendChild(el("p","sub","Every topic as a node: mastery %, problems solved, and a read on where you stand. Colour = status. Even a wrong Run feeds this — you get an approach hint and partial credit, not just a ✗."));
+
+  const solvedN=Object.keys(S.solved).length;
+  const attN=Object.values(S.topics).reduce((a,t)=>a+t.att,0);
+  root.appendChild(el("div","statline",
+    `Solved <b>${solvedN}</b>/${BANK.length} · Logged attempts <b>${attN}</b> · Curriculum day <b>${S.day}</b>/30`));
+
+  // legend
+  const lg=el("div","cmdlegend");
+  lg.innerHTML=`<span><i style="background:#5d6678"></i>fresh</span>`+
+    `<span><i style="background:#f87171"></i>needs work</span>`+
+    `<span><i style="background:#fbbf24"></i>close</span>`+
+    `<span><i style="background:#34d399"></i>solid</span>`;
+  root.appendChild(lg);
+
+  // constellation grid (all topics, ordered by category)
+  const grid=el("div","mgrid");
+  ["sql","proba","stats","apt"].forEach(c=>{
+    VOCAB[c].forEach(name=>{
+      const tag=c+":"+name, col=CATCOLOR[c], pct=masteryPct(tag);
+      const done=solvedOf(tag), total=totalOf(tag), s=S.topics[tag]||{att:0};
+      const fresh=s.att===0;
+      const cell=el("div","mcell"+(fresh?" fresh":""));
+      const fill=el("div","mfill"); fill.style.width=Math.max(pct,fresh?0:3)+"%"; fill.style.background=col; cell.appendChild(fill);
+      const nm=el("div","mname"); const dot=el("i"); dot.style.background=statusColor(tag); dot.style.color=statusColor(tag);
+      nm.appendChild(dot); nm.appendChild(document.createTextNode(tag)); cell.appendChild(nm);
+      const sc=el("div","mscore",pct+"<span>%</span>"); sc.style.color=fresh?"var(--faint)":col; cell.appendChild(sc);
+      cell.appendChild(el("div","mcount",`${done}/${total} solved`));
+      cell.appendChild(el("div","mnarr",esc(narrativeFor(tag))));
+      const ds=diffSpread(tag), dr=el("div","mdiff");
+      if(ds.Easy)dr.appendChild(el("span",null,ds.Easy+"E"));
+      if(ds.Medium)dr.appendChild(el("span",null,ds.Medium+"M"));
+      if(ds.Hard)dr.appendChild(el("span",null,ds.Hard+"H"));
+      cell.appendChild(dr);
+      if(total>done){
+        const db=el("button","drill","drill ▸");
+        db.onclick=(e)=>{e.stopPropagation();const pr=BANK.find(x=>x.tag===tag&&!S.solved[x.id]);if(pr)openProblem(pr.id);};
+        cell.appendChild(db);
+      }
+      grid.appendChild(cell);
+    });
+  });
+  root.appendChild(grid);
+  root.appendChild(el("div","tiny","&nbsp;"));
+
+  // ---- SQL command fluency ----
+  root.appendChild(el("h1",null,"SQL command fluency"));
+  root.appendChild(el("p","sub","New to SQL? This tracks the individual commands you actually land in a passing query — so you can watch COALESCE, window functions, CTEs and the rest go from grey to green. Tap any command to drill a problem that uses it."));
+  const cl=el("div","cmdlegend");
+  cl.innerHTML=`<span><i style="background:#5d6678"></i>untouched</span>`+
+    `<span><i style="background:#f87171"></i>tried, not landed</span>`+
+    `<span><i style="background:#fbbf24"></i>getting there</span>`+
+    `<span><i style="background:#34d399"></i>fluent (3+ clean uses)</span>`;
+  root.appendChild(cl);
+
+  const wrap=el("div","cmdwrap");
+  // sort: least-fluent & attempted first, then untouched, so focus areas surface
+  const ordered=[...SQLCMDS].map(([n,re,blurb])=>({n,blurb,c:S.cmds[n]||{seen:0,used:0,correct:0},fl:cmdFluency(n)}))
+    .sort((a,b)=>{
+      const at=(a.c.used>0||a.c.seen>0)?0:1, bt=(b.c.used>0||b.c.seen>0)?0:1;
+      if(at!==bt) return at-bt;            // touched commands first
+      if(a.fl!==b.fl) return a.fl-b.fl;    // weakest first
+      return 0;
+    });
+  ordered.forEach(({n,blurb,c,fl})=>{
+    const chip=el("div","cmdchip");
+    const top=el("div","cmdtop");
+    const dot=el("i"); dot.style.background=cmdColor(n); top.appendChild(dot);
+    top.appendChild(el("span","cmdname",n));
+    top.appendChild(el("span","cmdstat",`✓${c.correct} · used ${c.used}`));
+    chip.appendChild(top);
+    const bar=el("div","cmdbar"); const i=el("i"); i.style.width=fl+"%"; i.style.background=cmdColor(n); bar.appendChild(i); chip.appendChild(bar);
+    chip.appendChild(el("div","cmdblurb",esc(blurb)));
+    chip.onclick=()=>{const id=firstProblemUsing(n); if(id)openProblem(id); else show("bank");};
+    wrap.appendChild(chip);
+  });
+  root.appendChild(wrap);
 }
 
 /* ---------- WEAK POINTS ---------- */
