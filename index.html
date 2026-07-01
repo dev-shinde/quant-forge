@@ -76,6 +76,7 @@ h2{font-size:16px;font-weight:600;margin:0 0 14px}
 .pback:hover{color:var(--cyan)}
 .phead{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:6px}
 .phead h1{flex:1;min-width:240px}
+.clock{font-size:14px;font-weight:600;align-self:center;white-space:nowrap;letter-spacing:.3px}
 .statement{font-size:15px;line-height:1.65;margin:10px 0 16px}
 .statement b{color:#fff;font-weight:600}
 .block{margin:14px 0}
@@ -194,6 +195,27 @@ table.db td{color:var(--text)}
 .mscore span{font-size:14px;opacity:.6;margin-left:1px}
 .mcount{font-size:11.5px;color:var(--muted);font-family:var(--mono);margin-top:1px}
 .mnarr{font-size:12px;color:var(--faint);margin-top:9px;line-height:1.4;min-height:32px}
+.mtime{font-family:var(--mono);font-size:11px;margin-top:6px}
+.mcat{display:flex;align-items:center;gap:9px;margin:20px 0 11px;font-size:13px;font-weight:600;font-family:var(--mono);
+  text-transform:uppercase;letter-spacing:1px;color:var(--text)}
+.mcat i{width:10px;height:10px;border-radius:3px;display:block;flex:none}
+.mcatpct{margin-left:auto;font-family:var(--mono);font-size:16px;font-weight:700;letter-spacing:0}
+.cmdlvl{margin-left:auto;font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.5px}
+.cmdstat2{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-bottom:6px}
+
+/* ---- rich evaluation card ---- */
+.evalcard{border:1px solid var(--line2);border-radius:13px;padding:15px 16px;margin-top:12px;background:var(--panel);animation:fade .2s ease}
+.evalcard.pass{border-color:var(--good)} .evalcard.fail{border-color:var(--bad)}
+.evalhd{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.evalv{font-size:15px;font-weight:700}
+.evalv.pass{color:var(--good)} .evalv.fail{color:var(--bad)}
+.evalstr{font-family:var(--mono);font-size:12px;color:var(--cyan);border:1px solid var(--line2);border-radius:6px;padding:1px 8px}
+.evalpct{margin-left:auto;font-family:var(--mono);font-size:22px;font-weight:700;color:var(--text)}
+.evaltag{font-family:var(--mono);font-size:11px;color:var(--muted);margin:2px 0 10px}
+.evalsec{margin-top:11px}
+.evallbl{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:1px;color:var(--violet);margin-bottom:4px}
+.evalbody{font-size:13.5px;color:var(--text);line-height:1.5;margin:0}
+.evalover{font-size:13px;color:var(--muted);line-height:1.5;margin:13px 0 0;border-top:1px solid var(--line);padding-top:11px;font-style:italic}
 .mdiff{display:flex;gap:5px;margin-top:9px}
 .mdiff span{font-family:var(--mono);font-size:10px;color:var(--muted);border:1px solid var(--line2);border-radius:5px;padding:1px 6px}
 .mcell .drill{position:absolute;top:12px;right:12px;background:transparent;border:1px solid var(--line2);color:var(--muted);
@@ -1088,9 +1110,9 @@ const SPINE = [
 const LS="quantforge_v1";
 function freshState(){
   const topics={};
-  ALLTAGS.forEach(t=>topics[t]={att:0,pass:0,slip:0,scores:[]});
-  BASELINE.forEach(t=>{ if(topics[t]) topics[t].baseline=1; });
-  return {day:1,solved:{},evalLog:[],topics,dayScore:{},cmds:{}};
+  ALLTAGS.forEach(t=>topics[t]={att:0,pass:0,slip:0,scores:[],strength:0});
+  BASELINE.forEach(t=>{ if(topics[t]){ topics[t].baseline=1; topics[t].strength=18; } });
+  return {day:1,solved:{},evalLog:[],topics,dayScore:{},cmds:{},solveTime:{},timeSpent:{}};
 }
 let S = load();
 function load(){
@@ -1099,7 +1121,11 @@ function load(){
   if(!r||!r.topics) return freshState();
   // backfill fields added in later versions so old progress is preserved
   if(!r.cmds) r.cmds={};
-  ALLTAGS.forEach(t=>{ if(!r.topics[t]) r.topics[t]={att:0,pass:0,slip:0,scores:[]}; });
+  if(!r.solveTime) r.solveTime={};
+  if(!r.timeSpent) r.timeSpent={};
+  ALLTAGS.forEach(t=>{ if(!r.topics[t]) r.topics[t]={att:0,pass:0,slip:0,scores:[],strength:0}; });
+  Object.values(r.topics).forEach(s=>{ if(s.strength==null) s.strength=0; });
+  BASELINE.forEach(t=>{ if(r.topics[t]&&r.topics[t].att===0&&!r.topics[t].strength) r.topics[t].strength=18; });
   return r;
 }
 function save(){ localStorage.setItem(LS,JSON.stringify(S)); }
@@ -1128,11 +1154,41 @@ function weaknessScore(t){
 const CATCOLOR={sql:"#34e0d2",proba:"#a78bfa",stats:"#34d399",apt:"#fbbf24"};
 
 /* ---------- mastery % + narrative per topic ---------- */
+// mastery is an accumulating "strength" (DSA-Forge style): climbs with clean solves,
+// nudged by pass-rate and slips so it reflects real command habit, not one lucky run.
 function masteryPct(t){
-  const s=S.topics[t]||{att:0,pass:0,slip:0};
-  if(s.att===0) return 0;
+  const s=S.topics[t]||{att:0,strength:0};
+  if(s.att===0) return s.baseline?Math.round(s.strength||0):0;
   const passRate=s.pass/s.att, slipRate=s.slip/Math.max(s.att,1);
-  return Math.round(Math.max(0,Math.min(100,passRate*100 - slipRate*15 - (s.baseline?5:0))));
+  const blended=(s.strength||0)*0.7 + (passRate*100)*0.3 - slipRate*10;
+  return Math.round(Math.max(0,Math.min(100,blended)));
+}
+/* strength accumulators — the "+N strength" mechanic */
+function bumpStrength(t,delta){
+  const s=S.topics[t]||(S.topics[t]={att:0,pass:0,slip:0,scores:[],strength:0});
+  s.strength=Math.max(0,Math.min(100,(s.strength||0)+delta));
+  return s.strength;
+}
+function bumpCmd(name,delta){
+  const c=cmdState(name);
+  c.str=Math.max(0,Math.min(100,(c.str||0)+delta));
+  return c.str;
+}
+
+/* ---------- speed timer (train like a real OA) ---------- */
+const TARGETS={Easy:12*60,Medium:25*60,Hard:45*60};   // seconds
+let timerId=null,timerStart=0,timerInt=null,timerRunning=false;
+function fmtTime(s){ s=Math.max(0,Math.floor(s)); const m=Math.floor(s/60),x=s%60; return (m<10?"0":"")+m+":"+(x<10?"0":"")+x; }
+function bankTime(){ if(timerId&&timerRunning){ S.timeSpent[timerId]=(S.timeSpent[timerId]||0)+(Date.now()-timerStart)/1000; timerStart=Date.now(); } }
+function elapsedSec(id){ let t=S.timeSpent[id]||0; if(timerId===id&&timerRunning) t+=(Date.now()-timerStart)/1000; return Math.floor(t); }
+function startTimer(id){ bankTime(); clearInterval(timerInt); timerId=id; timerStart=Date.now(); timerRunning=true; renderClock(); timerInt=setInterval(renderClock,1000); }
+function stopTimer(){ bankTime(); timerRunning=false; clearInterval(timerInt); timerInt=null; timerId=null; save(); }
+function renderClock(){
+  const c=document.getElementById("clock"); if(!c||!timerId) return;
+  const p=byId[timerId]; if(!p) return;
+  const e=elapsedSec(p.id), tgt=TARGETS[p.difficulty]||1500, done=S.solveTime[p.id]!=null;
+  c.style.color = done?"var(--good)" : e>tgt?"var(--bad)" : e>tgt*0.7?"var(--amber)":"var(--good)";
+  c.innerHTML=(done?"✓ ":"⏱ ")+fmtTime(e)+` <em style="color:var(--faint);font-style:normal">/ ${fmtTime(tgt)}</em>`;
 }
 function narrativeFor(t){
   const s=S.topics[t]||{att:0}, pct=masteryPct(t);
@@ -1203,6 +1259,21 @@ const CMDTARGETS={
   "sql-09":["LEFT JOIN","COALESCE","SUM","GROUP BY","ORDER BY"],
   "sql-10":["WITH (CTE)","RECURSIVE"]
 };
+/* command families — the "abilities" grid groups by these, with a rollup per family */
+const CMDFAMILIES=[
+  ["Aggregates",      ["COUNT","SUM","AVG","ROUND"]],
+  ["Grouping & filter",["GROUP BY","HAVING","CASE","DISTINCT"]],
+  ["Joins",           ["JOIN","LEFT JOIN"]],
+  ["NULL handling",   ["COALESCE","NULLIF"]],
+  ["Anti / semi-joins",["NOT EXISTS","EXISTS","NOT IN"]],
+  ["Set operations",  ["UNION","EXCEPT","INTERSECT"]],
+  ["Window functions",["OVER","PARTITION BY","ROW_NUMBER","RANK","DENSE_RANK","LAG","LEAD","ORDER BY"]],
+  ["CTEs & recursion",["WITH (CTE)","RECURSIVE"]]
+];
+function familyPct(members){
+  const vals=members.map(cmdFluency);
+  return Math.round(vals.reduce((a,b)=>a+b,0)/Math.max(members.length,1));
+}
 function cleanSql(q){
   return String(q||"")
     .replace(/--[^\n]*/g,"")            // line comments
@@ -1218,22 +1289,32 @@ function cmdState(n){ return S.cmds[n]||(S.cmds[n]={seen:0,used:0,correct:0}); }
 /* log a SQL attempt: credit commands used, and count exposure for the problem's targets */
 function logCmds(prob,query,passed){
   const used=detectCmds(query);
-  used.forEach(n=>{ const c=cmdState(n); c.used++; if(passed)c.correct++; });
+  used.forEach(n=>{ const c=cmdState(n); c.used++; if(passed){ c.correct++; bumpCmd(n, c.correct<=3?26:10); } });
   (CMDTARGETS[prob.id]||[]).forEach(n=>{ cmdState(n).seen++; });
   save();
   return used;
 }
 function cmdFluency(n){
-  const c=S.cmds[n]||{used:0,correct:0};
+  const c=S.cmds[n]||{used:0,correct:0,str:0};
+  if(c.str>0) return Math.round(c.str);
   if(c.correct<=0) return 0;
-  return Math.min(100, c.correct*40);   // 1 clean use =40%, 2 =80%, 3+ =100%
+  return Math.min(100, c.correct*40);
 }
 function cmdColor(n){
-  const c=S.cmds[n]||{used:0,correct:0};
-  if(c.correct>=3) return "#34d399";
-  if(c.correct>=1) return "#fbbf24";
-  if(c.used>0)     return "#f87171";   // tried but never landed it
-  return "#5d6678";                     // untouched
+  const c=S.cmds[n]||{used:0,correct:0,str:0};
+  const f=cmdFluency(n);
+  if(f>=75) return "#34d399";           // green · fluent
+  if(c.correct>0) return "#fbbf24";     // amber · landed it (getting there)
+  if(c.used>0) return "#f87171";        // rose  · tried, not landed
+  return "#5d6678";                      // grey  · untouched
+}
+function cmdLevelLabel(n){
+  const c=S.cmds[n]||{used:0,correct:0,str:0}; const f=cmdFluency(n);
+  if(c.correct===0 && c.used===0) return "untouched";
+  if(c.used>0 && c.correct===0) return "tried";
+  if(f>=75) return "fluent";
+  if(f>=40) return "familiar";
+  return "learning";
 }
 function firstProblemUsing(cmd){
   const id=Object.keys(CMDTARGETS).find(id=>CMDTARGETS[id].includes(cmd) && !S.solved[id])
@@ -1332,28 +1413,51 @@ function checkQuant(prob,raw){
 
 /* ---------- logging ---------- */
 function logTopic(tag,passed,slips){
-  const s=S.topics[tag]||(S.topics[tag]={att:0,pass:0,slip:0,scores:[]});
+  const s=S.topics[tag]||(S.topics[tag]={att:0,pass:0,slip:0,scores:[],strength:0});
   s.att++; if(passed)s.pass++; s.slip+=slips; s.scores.push(passed?1:0);
+}
+// award strength for a correct solve; +speed bonus if under target, small penalty for slips.
+// returns {delta, pct} so the UI can show "+N strength · X%".
+function awardStrength(prob,passed,slips){
+  const before=S.topics[prob.tag]?.strength||0;
+  let delta=0;
+  if(passed){
+    delta=10;
+    const e=elapsedSec(prob.id), tgt=TARGETS[prob.difficulty]||1500;
+    if(e>0 && e<=tgt) delta+=2;                 // under-target speed bonus
+    delta-=Math.min(4,slips*2);                 // recurring slips shave the gain
+    if(S.solved[prob.id]) delta=Math.round(delta*0.4);   // re-solve = smaller top-up
+    if(e>0){ if(S.solveTime[prob.id]==null||e<S.solveTime[prob.id]) S.solveTime[prob.id]=e; }
+  }else{
+    delta=-3;                                    // a miss dents strength a little
+  }
+  bumpStrength(prob.tag,delta);
+  return {delta, pct:masteryPct(prob.tag)};
 }
 function logEval(prob,passed,tags){
   const slips=tags.filter(t=>t!==prob.tag).length + (passed?0:1);
   logTopic(prob.tag,passed,passed?0:1);
   tags.forEach(t=>{ if(t!==prob.tag && S.topics[t]) S.topics[t].slip++; });
-  S.evalLog.push({ts:Date.now(),id:prob.id,cat:prob.category,tag:prob.tag,passed,tags});
+  const award=awardStrength(prob,passed,tags.filter(t=>t!==prob.tag).length);
+  S.evalLog.push({ts:Date.now(),id:prob.id,cat:prob.category,tag:prob.tag,passed,tags,delta:award.delta});
   if(passed) S.solved[prob.id]=true;
   save();
+  return award;
 }
 function markSolved(prob,passed){
-  // SQL Run is a correctness signal; quant Run is NOT logged to profile (per spec)
-  if(prob.category==="sql"){ logTopic(prob.tag,passed,0); if(passed)S.solved[prob.id]=true; save(); }
-  else if(passed){ S.solved[prob.id]=true; save(); }
+  // SQL Run is a correctness signal; quant Run is NOT logged to topic stats (per spec)
+  let award=null;
+  if(prob.category==="sql"){ logTopic(prob.tag,passed,0); award=awardStrength(prob,passed,0); if(passed)S.solved[prob.id]=true; save(); }
+  else if(passed){ award=awardStrength(prob,true,0); S.solved[prob.id]=true; save(); }
+  return award;
 }
 
 /* ---------- judge (silent /api/judge) ---------- */
 async function judge(prob,work){
   const payload={
     category:prob.category, tag:prob.tag, title:prob.title, statement:prob.statement,
-    dialectNote:prob.dialectNote||null,
+    difficulty:prob.difficulty, dialectNote:prob.dialectNote||null,
+    commandTargets: prob.category==="sql" ? (CMDTARGETS[prob.id]||[]) : null,
     expected: prob.category==="sql" ? {cols:prob.expected.cols,rows:prob.expected.rows.slice(0,8)} : {answer:prob.answer,accept:prob.accept},
     playbook:prob.playbook, userWork:work, vocab:VOCAB
   };
@@ -1453,13 +1557,15 @@ let cm=null;
 function openProblem(id){
   const p=byId[id]; const root=$("#problem"); root.innerHTML=""; cm=null;
   show("problem"); // sets active
-  const back=el("button","pback","‹ back"); back.onclick=()=>show("today"); root.appendChild(back);
+  const back=el("button","pback","‹ back"); back.onclick=()=>{stopTimer();show("today");}; root.appendChild(back);
 
   const head=el("div","phead");
   head.appendChild(el("span","cat "+p.category,catLabel(p.category)));
   head.appendChild(el("h1",null,esc(p.title)));
   head.appendChild(el("span","diff mono",p.difficulty+" · "+p.tag));
+  const clock=el("span","clock mono"); clock.id="clock"; head.appendChild(clock);
   root.appendChild(head);
+  startTimer(p.id);
 
   root.appendChild(el("div","statement",md(p.statement)));
 
@@ -1617,20 +1723,81 @@ async function doRun(p,btn,res){
 }
 async function doEval(p,btn,res){
   res.innerHTML=""; btn.disabled=true; const old=btn.textContent; btn.textContent="evaluating…";
+  bankTime();
+  const elapsed=elapsedSec(p.id);
   const work = p.category==="sql" ? cm.getValue() : (($("#scratch").value||"")+"\n\nFINAL: "+($("#finalAns").value||""));
   try{
     const j=await judge(p,work);
     const passed=!!j.correct;
     const tags=(j.tags||[]).filter(t=>ALLTAGS.includes(t));
-    res.appendChild(verdictBox(passed?"pass":"fail",
-      `${passed?"✓":"✗"} ${j.verdict||""}\n\nHint: ${j.hint||"—"}`, tags));
-    logEval(p,passed,tags.length?tags:(passed?[p.tag]:[p.tag]));
+    // apply strength + record; award.delta / award.pct drive the header
+    const award=logEval(p,passed,tags.length?tags:[p.tag]);
+    // credit commands the judge says were used well (SQL)
+    let wellUsed=[];
+    if(p.category==="sql" && Array.isArray(j.commandsWellUsed)){
+      wellUsed=j.commandsWellUsed.filter(n=>SQLCMDS.some(x=>x[0]===n));
+      wellUsed.forEach(n=>{ const c=cmdState(n); if(passed){ bumpCmd(n,14); } }); save();
+    }
+    res.appendChild(evalCard(p,{passed,elapsed,award,verdict:j.verdict||"",implementation:j.implementation||"",overall:j.overall||"",hint:j.hint||"",tags,wellUsed}));
     recordDayScore(p.id,passed);
+    renderClock();
   }catch(e){
     res.appendChild(verdictBox("info",
-      "Judge unavailable (running locally without /api/judge, or ANTHROPIC_API_KEY not set). Run still works offline.\n\n"+e.message));
+      "Judge unavailable (running locally without /api/judge, or ANTHROPIC_API_KEY not set). ▶ Run still works offline and still feeds your mastery map.\n\n"+e.message));
   }
   btn.disabled=false; btn.textContent=old;
+}
+/* DSA-Forge-style evaluation card: verdict · +strength · topic% / Implementation / Speed / Overall */
+function evalCard(p,r){
+  const cls=r.passed?"pass":"fail";
+  const card=el("div","evalcard "+cls);
+
+  // header row
+  const hd=el("div","evalhd");
+  const vv=el("span","evalv "+cls, (r.passed?"✓ solved":"✗ not yet")+(r.verdict?" · "+esc(r.verdict):""));
+  hd.appendChild(vv);
+  const dl=r.award?r.award.delta:0;
+  const strengthTxt=(dl>=0?"+":"")+dl+" strength";
+  hd.appendChild(el("span","evalstr",strengthTxt));
+  hd.appendChild(el("span","evalpct",(r.award?r.award.pct:masteryPct(p.tag))+"%"));
+  card.appendChild(hd);
+  card.appendChild(el("div","evaltag",`${p.tag} · ${p.difficulty}`));
+
+  // Implementation / Approach
+  if(r.implementation){
+    const sec=el("div","evalsec");
+    sec.appendChild(el("div","evallbl",p.category==="sql"?"Query craft":"Method"));
+    sec.appendChild(el("p","evalbody",esc(r.implementation)));
+    card.appendChild(sec);
+  }
+  // commands landed (SQL)
+  if(p.category==="sql" && r.wellUsed && r.wellUsed.length){
+    const sec=el("div","evalsec");
+    sec.appendChild(el("div","evallbl","Commands you used well"));
+    const row=el("div","tagrow"); r.wellUsed.forEach(n=>{const s=el("span","tagpill");s.style.borderColor="#34d399";s.style.color="#34d399";s.textContent=n;row.appendChild(s);}); sec.appendChild(row);
+    card.appendChild(sec);
+  }
+  // Speed (client-computed vs target)
+  const tgt=TARGETS[p.difficulty]||1500;
+  const under=r.elapsed>0 && r.elapsed<=tgt;
+  const sec=el("div","evalsec");
+  sec.appendChild(el("div","evallbl","Speed"));
+  const st=el("p","evalbody");
+  st.innerHTML = r.elapsed>0
+    ? `Solved in <b>${fmtTime(r.elapsed)}</b> — target ${fmtTime(tgt)} for ${p.difficulty}. `+
+      (under?`<span style="color:var(--good)">Under target ✓</span>`:`<span style="color:var(--amber)">Over target — trim it next pass.</span>`)
+    : "Timer not started for this attempt.";
+  sec.appendChild(st); card.appendChild(sec);
+
+  // Overall + hint
+  if(r.overall){ card.appendChild(el("p","evalover",esc(r.overall))); }
+  if(!r.passed && r.hint){
+    const h=el("div","approach"); h.appendChild(el("b",null,"Next step")); h.appendChild(el("span",null,esc(r.hint))); card.appendChild(h);
+  }
+  if(r.tags && r.tags.length){
+    const tr=el("div","tagrow"); r.tags.forEach(t=>tr.appendChild(el("span","tagpill",t))); card.appendChild(tr);
+  }
+  return card;
 }
 function recordDayScore(id,ok){
   const d=Math.min(S.day,30); const k="d"+d;
@@ -1640,17 +1807,42 @@ function recordDayScore(id,ok){
 }
 
 /* ---------- MASTERY CONSTELLATION ---------- */
+function topicTimeLine(tag){
+  const solved=BANK.filter(p=>p.tag===tag&&S.solved[p.id]&&S.solveTime[p.id]!=null);
+  if(!solved.length) return null;
+  const avg=solved.reduce((s,p)=>s+S.solveTime[p.id],0)/solved.length;
+  const tgt=solved.reduce((s,p)=>s+(TARGETS[p.difficulty]||1500),0)/solved.length;
+  const col=avg>tgt?"var(--bad)":avg>tgt*0.7?"var(--amber)":"var(--good)";
+  return {avg,tgt,col};
+}
+function mcell(tag,col){
+  const pct=masteryPct(tag), done=solvedOf(tag), total=totalOf(tag), s=S.topics[tag]||{att:0};
+  const fresh=s.att===0;
+  const cell=el("div","mcell"+(fresh?" fresh":""));
+  const fill=el("div","mfill"); fill.style.width=Math.max(pct,fresh?0:3)+"%"; fill.style.background=col; cell.appendChild(fill);
+  const nm=el("div","mname"); const dot=el("i"); dot.style.background=statusColor(tag); dot.style.color=statusColor(tag);
+  nm.appendChild(dot); nm.appendChild(document.createTextNode(tag.split(":")[1]||tag)); cell.appendChild(nm);
+  const sc=el("div","mscore",pct+"<span>%</span>"); sc.style.color=fresh?"var(--faint)":col; cell.appendChild(sc);
+  cell.appendChild(el("div","mcount",`${done}/${total} solved`));
+  const tl=topicTimeLine(tag);
+  if(tl){ const t=el("div","mtime",`⏱ avg ${fmtTime(tl.avg)} · tgt ${fmtTime(tl.tgt)}`); t.style.color=tl.col; cell.appendChild(t); }
+  cell.appendChild(el("div","mnarr",esc(narrativeFor(tag))));
+  if(total>done){
+    const db=el("button","drill","drill ▸");
+    db.onclick=(e)=>{e.stopPropagation();const pr=BANK.find(x=>x.tag===tag&&!S.solved[x.id]);if(pr)openProblem(pr.id);};
+    cell.appendChild(db);
+  }
+  return cell;
+}
 function renderMastery(){
   const root=$("#mastery"); root.innerHTML="";
   root.appendChild(el("h1",null,"Mastery constellation"));
-  root.appendChild(el("p","sub","Every topic as a node: mastery %, problems solved, and a read on where you stand. Colour = status. Even a wrong Run feeds this — you get an approach hint and partial credit, not just a ✗."));
+  root.appendChild(el("p","sub","Every subtopic is a node — mastery %, problems solved, and your avg time vs target. Strength climbs with clean, fast solves and dips on misses. Colour = status."));
 
   const solvedN=Object.keys(S.solved).length;
   const attN=Object.values(S.topics).reduce((a,t)=>a+t.att,0);
   root.appendChild(el("div","statline",
     `Solved <b>${solvedN}</b>/${BANK.length} · Logged attempts <b>${attN}</b> · Curriculum day <b>${S.day}</b>/30`));
-
-  // legend
   const lg=el("div","cmdlegend");
   lg.innerHTML=`<span><i style="background:#5d6678"></i>fresh</span>`+
     `<span><i style="background:#f87171"></i>needs work</span>`+
@@ -1658,68 +1850,61 @@ function renderMastery(){
     `<span><i style="background:#34d399"></i>solid</span>`;
   root.appendChild(lg);
 
-  // constellation grid (all topics, ordered by category)
-  const grid=el("div","mgrid");
+  // one section per category so SQL subtopics are grouped and legible
+  const CATNAME={sql:"SQL — by subtopic",proba:"Probability",stats:"Statistics",apt:"Aptitude"};
   ["sql","proba","stats","apt"].forEach(c=>{
-    VOCAB[c].forEach(name=>{
-      const tag=c+":"+name, col=CATCOLOR[c], pct=masteryPct(tag);
-      const done=solvedOf(tag), total=totalOf(tag), s=S.topics[tag]||{att:0};
-      const fresh=s.att===0;
-      const cell=el("div","mcell"+(fresh?" fresh":""));
-      const fill=el("div","mfill"); fill.style.width=Math.max(pct,fresh?0:3)+"%"; fill.style.background=col; cell.appendChild(fill);
-      const nm=el("div","mname"); const dot=el("i"); dot.style.background=statusColor(tag); dot.style.color=statusColor(tag);
-      nm.appendChild(dot); nm.appendChild(document.createTextNode(tag)); cell.appendChild(nm);
-      const sc=el("div","mscore",pct+"<span>%</span>"); sc.style.color=fresh?"var(--faint)":col; cell.appendChild(sc);
-      cell.appendChild(el("div","mcount",`${done}/${total} solved`));
-      cell.appendChild(el("div","mnarr",esc(narrativeFor(tag))));
-      const ds=diffSpread(tag), dr=el("div","mdiff");
-      if(ds.Easy)dr.appendChild(el("span",null,ds.Easy+"E"));
-      if(ds.Medium)dr.appendChild(el("span",null,ds.Medium+"M"));
-      if(ds.Hard)dr.appendChild(el("span",null,ds.Hard+"H"));
-      cell.appendChild(dr);
-      if(total>done){
-        const db=el("button","drill","drill ▸");
-        db.onclick=(e)=>{e.stopPropagation();const pr=BANK.find(x=>x.tag===tag&&!S.solved[x.id]);if(pr)openProblem(pr.id);};
-        cell.appendChild(db);
-      }
-      grid.appendChild(cell);
-    });
+    const col=CATCOLOR[c];
+    const eb=el("div","mcat"); const d=el("i"); d.style.background=col; eb.appendChild(d);
+    eb.appendChild(document.createTextNode(CATNAME[c]));
+    // category rollup %
+    const catPct=Math.round(VOCAB[c].reduce((a,n)=>a+masteryPct(c+":"+n),0)/VOCAB[c].length);
+    const rp=el("span","mcatpct",catPct+"%"); rp.style.color=col; eb.appendChild(rp);
+    root.appendChild(eb);
+    const grid=el("div","mgrid");
+    VOCAB[c].forEach(name=>grid.appendChild(mcell(c+":"+name,col)));
+    root.appendChild(grid);
   });
-  root.appendChild(grid);
   root.appendChild(el("div","tiny","&nbsp;"));
 
-  // ---- SQL command fluency ----
-  root.appendChild(el("h1",null,"SQL command fluency"));
-  root.appendChild(el("p","sub","New to SQL? This tracks the individual commands you actually land in a passing query — so you can watch COALESCE, window functions, CTEs and the rest go from grey to green. Tap any command to drill a problem that uses it."));
+  // ================= SQL COMMAND ABILITIES =================
+  root.appendChild(el("h1",null,"SQL command abilities"));
+  root.appendChild(el("p","sub","The habit tracker: every SQL command you actually land in a passing query levels up here. Grouped by ability family so you can see — did I really get comfortable with aggregate functions? joins? window functions? Tap any command to drill a problem that trains it."));
   const cl=el("div","cmdlegend");
   cl.innerHTML=`<span><i style="background:#5d6678"></i>untouched</span>`+
     `<span><i style="background:#f87171"></i>tried, not landed</span>`+
-    `<span><i style="background:#fbbf24"></i>getting there</span>`+
-    `<span><i style="background:#34d399"></i>fluent (3+ clean uses)</span>`;
+    `<span><i style="background:#fbbf24"></i>familiar</span>`+
+    `<span><i style="background:#34d399"></i>fluent</span>`;
   root.appendChild(cl);
 
-  const wrap=el("div","cmdwrap");
-  // sort: least-fluent & attempted first, then untouched, so focus areas surface
-  const ordered=[...SQLCMDS].map(([n,re,blurb])=>({n,blurb,c:S.cmds[n]||{seen:0,used:0,correct:0},fl:cmdFluency(n)}))
-    .sort((a,b)=>{
-      const at=(a.c.used>0||a.c.seen>0)?0:1, bt=(b.c.used>0||b.c.seen>0)?0:1;
-      if(at!==bt) return at-bt;            // touched commands first
-      if(a.fl!==b.fl) return a.fl-b.fl;    // weakest first
-      return 0;
+  CMDFAMILIES.forEach(([fam,members])=>{
+    const fp=familyPct(members);
+    const head=el("div","mcat");
+    const d=el("i"); d.style.background=fp>=75?"#34d399":fp>=40?"#fbbf24":fp>0?"#f87171":"#5d6678"; head.appendChild(d);
+    head.appendChild(document.createTextNode(fam));
+    const rp=el("span","mcatpct",fp+"%"); rp.style.color=fp>0?"var(--text)":"var(--faint)"; head.appendChild(rp);
+    root.appendChild(head);
+    const fbar=el("div","cmdbar"); fbar.style.margin="2px 0 12px"; const fi=el("i"); fi.style.width=fp+"%";
+    fi.style.background=fp>=75?"#34d399":fp>=40?"#fbbf24":"#f87171"; fbar.appendChild(fi); root.appendChild(fbar);
+
+    const wrap=el("div","cmdwrap");
+    members.forEach(n=>{
+      const meta=SQLCMDS.find(x=>x[0]===n); const blurb=meta?meta[2]:"";
+      const c=S.cmds[n]||{seen:0,used:0,correct:0,str:0}; const fl=cmdFluency(n);
+      const chip=el("div","cmdchip");
+      const top=el("div","cmdtop");
+      const dot=el("i"); dot.style.background=cmdColor(n); top.appendChild(dot);
+      top.appendChild(el("span","cmdname",n));
+      const lbl=el("span","cmdlvl",cmdLevelLabel(n)); lbl.style.color=cmdColor(n); top.appendChild(lbl);
+      chip.appendChild(top);
+      const bar=el("div","cmdbar"); const i=el("i"); i.style.width=fl+"%"; i.style.background=cmdColor(n); bar.appendChild(i); chip.appendChild(bar);
+      chip.appendChild(el("div","cmdstat2",`landed ✓${c.correct} · used ${c.used}× · strength ${fl}%`));
+      chip.appendChild(el("div","cmdblurb",esc(blurb)));
+      chip.onclick=()=>{const id=firstProblemUsing(n); if(id)openProblem(id); else show("bank");};
+      wrap.appendChild(chip);
     });
-  ordered.forEach(({n,blurb,c,fl})=>{
-    const chip=el("div","cmdchip");
-    const top=el("div","cmdtop");
-    const dot=el("i"); dot.style.background=cmdColor(n); top.appendChild(dot);
-    top.appendChild(el("span","cmdname",n));
-    top.appendChild(el("span","cmdstat",`✓${c.correct} · used ${c.used}`));
-    chip.appendChild(top);
-    const bar=el("div","cmdbar"); const i=el("i"); i.style.width=fl+"%"; i.style.background=cmdColor(n); bar.appendChild(i); chip.appendChild(bar);
-    chip.appendChild(el("div","cmdblurb",esc(blurb)));
-    chip.onclick=()=>{const id=firstProblemUsing(n); if(id)openProblem(id); else show("bank");};
-    wrap.appendChild(chip);
+    root.appendChild(wrap);
+    root.appendChild(el("div","tiny","&nbsp;"));
   });
-  root.appendChild(wrap);
 }
 
 /* ---------- WEAK POINTS ---------- */
