@@ -278,6 +278,7 @@ table.db td{color:var(--text)}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/sql/sql.min.js"></script>
 <script type="module">
 import { PGlite } from "https://cdn.jsdelivr.net/npm/@electric-sql/pglite@0.5.3/dist/index.js";
+import { PGliteWorker } from "https://cdn.jsdelivr.net/npm/@electric-sql/pglite@0.5.3/dist/worker/index.js";
 
 /* ---------- data ---------- */
 const BANK = [
@@ -1348,16 +1349,37 @@ function parseTables(schema){
   return tables;
 }
 
-/* ---------- PGlite ---------- */
-let pg=null, pgReady=null, pgBooting=false;
-function warmPg(){ getPg().catch(()=>{}); } // fire-and-forget preload
+/* ---------- PGlite (runs in a Web Worker so heavy WASM never freezes the UI) ---------- */
+let pg=null, pgReady=null, pgBooting=false, pgMode="";
+const PG_URL="https://cdn.jsdelivr.net/npm/@electric-sql/pglite@0.5.3/dist/index.js";
+const PGW_URL="https://cdn.jsdelivr.net/npm/@electric-sql/pglite@0.5.3/dist/worker/index.js";
+function warmPg(){ getPg().catch(()=>{}); } // fire-and-forget preload (off the main thread)
+async function bootWorkerPg(){
+  const code=`import { PGlite } from "${PG_URL}";\nimport { worker } from "${PGW_URL}";\nworker({ async init(){ return new PGlite(); } });`;
+  const url=URL.createObjectURL(new Blob([code],{type:"text/javascript"}));
+  const w=new Worker(url,{type:"module"});
+  const db=new PGliteWorker(w);
+  await db.waitReady;
+  pgMode="worker"; return db;
+}
 async function getPg(){
   if(pg) return pg;
   if(!pgReady){
     pgBooting=true;
-    pgReady=PGlite.create()
-      .then(db=>{pg=db;pgBooting=false;return db;})
-      .catch(e=>{pgReady=null;pgBooting=false;throw new Error("engine-boot: "+(e&&e.message||e));});
+    pgReady=(async()=>{
+      try{
+        const db=await bootWorkerPg();           // preferred: off-thread, no UI hang
+        pg=db; pgBooting=false; return db;
+      }catch(e1){
+        try{
+          const db=await PGlite.create();         // fallback: main thread (may briefly jank)
+          pgMode="main"; pg=db; pgBooting=false; return db;
+        }catch(e2){
+          pgReady=null; pgBooting=false;
+          throw new Error("engine-boot: "+(e2&&e2.message||e2));
+        }
+      }
+    })();
   }
   return pgReady;
 }
@@ -1469,6 +1491,7 @@ async function judge(prob,work){
 /* ---------- router ---------- */
 const views=["today","bank","mastery","problem","weak","trends","drill"];
 function show(v){
+  if(v!=="problem" && timerRunning) stopTimer();
   views.forEach(x=>$("#"+x).classList.toggle("active", x===v));
   document.querySelectorAll("#nav button").forEach(b=>b.classList.toggle("active",b.dataset.v===v));
   if(v==="today")renderToday(); if(v==="bank")renderBank(); if(v==="mastery")renderMastery();
@@ -1683,7 +1706,7 @@ async function doRun(p,btn,res){
     );
     res.appendChild(r.box);
     try{
-      if(needsBoot){ await getPg(); r.setLabel("Running your query…"); r.setSub("Engine ready. Executing against real Postgres in your browser."); }
+      if(needsBoot){ await getPg(); r.setLabel("Running your query…"); r.setSub("Engine ready ("+(pgMode==="worker"?"web worker — UI stays smooth":"main thread fallback")+"). Executing against real Postgres."); }
       const got=await runProblemSql(p,cm.getValue());
       res.innerHTML="";
       const tbl=el("div","restable");
